@@ -192,7 +192,7 @@ fun SettingsScreen() {
                     else -> updates.check()
                 }
             }
-            SettingsItem("Open-source licences", "Fonts and libraries") { licencesOpen = true }
+            SettingsItem("Open-source licences", "BdayBoom is GPL-3.0, plus fonts and libraries") { licencesOpen = true }
             Spacer(Modifier.height(Space.s8))
         }
     }
@@ -234,9 +234,10 @@ fun SettingsScreen() {
             title = { Text("Open-source licences", style = t.lg, color = c.text) },
             text = {
                 Text(
-                    "Fonts: Plus Jakarta Sans, Playfair Display and Manrope, under the SIL Open Font License 1.1.\n\n" +
+                    "BdayBoom is free software under the GNU GPL v3.0. Source: github.com/enjeyisback/bdayboom\n\n" +
+                        "Fonts: Plus Jakarta Sans, Playfair Display and Manrope, under the SIL Open Font License 1.1.\n\n" +
                         "Icons: Material Symbols, Apache License 2.0.\n\n" +
-                        "Libraries: AndroidX and Jetpack Compose (Apache 2.0), SQLDelight (Apache 2.0).",
+                        "Libraries: AndroidX, Jetpack Compose, Glance, WorkManager and SQLDelight (Apache 2.0).",
                     style = t.sm, color = c.textMuted,
                 )
             },
