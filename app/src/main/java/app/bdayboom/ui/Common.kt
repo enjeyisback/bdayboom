@@ -70,14 +70,44 @@ fun rowModel(u: Upcoming, groups: List<Group>): PersonRowModel {
     return PersonRowModel(p.id, p.name, meta, group, date, spoken, kind, u.daysLeft, p.photoPath)
 }
 
-/** Wish text in the BdayBoom voice. */
-fun wishText(p: Person): String = when (p.type) {
-    EntryType.Birthday -> "Happy birthday, ${firstName(p.name)}! 🎂 Hope this year brings you everything you're hoping for."
-    EntryType.Anniversary -> "Happy anniversary, ${p.name}! 💕 Here's to many more years together."
-    EntryType.Event -> "Thinking of you today: ${p.name}! 🎉"
-}
+/** Ready-made wishes in the BdayBoom voice. "{name}" becomes the person's name. The first of each is the default. */
+val readyWishes: Map<EntryType, List<String>> = mapOf(
+    EntryType.Birthday to listOf(
+        "Happy birthday, {name}! 🎂 Hope this year brings you everything you're hoping for.",
+        "Happy birthday, {name}! 🎉 Wishing you a day as fun as you are.",
+        "Many happy returns of the day, {name}! 🎂 Have a brilliant year ahead.",
+        "Happy birthday, {name}! 🎈 Eat the cake, skip the calories, enjoy every minute.",
+        "Another year awesomer! 🎉 Happy birthday, {name}.",
+        "Happy birthday, {name}! 🌟 Thanks for making life brighter. Have the best day.",
+        "Wishing you health, laughs and a big slice of cake today, {name}! 🎂",
+        "Janamdin ki dher saari shubhkaamnayein, {name}! 🎂 Khush raho, hamesha muskurate raho.",
+        "Happy birthday, {name}! 🎉 Party hard, you've earned it.",
+        "Cheers to you, {name}! 🥳 May this year be your best one yet.",
+    ),
+    EntryType.Anniversary to listOf(
+        "Happy anniversary, {name}! 💕 Here's to many more years together.",
+        "Happy anniversary, {name}! 🥂 Wishing you love, laughs and lots more adventures.",
+        "Congratulations on another year together, {name}! 💕",
+        "Happy anniversary, {name}! 🌹 Your story keeps getting better.",
+        "Shaadi ki saalgirah mubarak ho, {name}! 💕 Yunhi saath bane rahein.",
+    ),
+    EntryType.Event to listOf(
+        "Thinking of you today: {name}! 🎉",
+        "Big day today, {name}! 🎉 Wishing you all the best.",
+        "Congratulations, {name}! 🌟 Hope today is a great one.",
+    ),
+)
 
-fun shareWish(context: Context, p: Person) {
-    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, wishText(p))
+/** Birthdays use the first name; anniversaries often hold two names, so they keep the full one. */
+fun wishName(p: Person): String = if (p.type == EntryType.Birthday) firstName(p.name) else p.name.trim()
+
+fun fillWish(template: String, p: Person?): String = template.replace("{name}", p?.let(::wishName) ?: "friend")
+
+/** Default wish text, used where there's no time to pick (e.g. Home's spotlight). */
+fun wishText(p: Person): String = fillWish(readyWishes.getValue(p.type).first(), p)
+
+fun shareText(context: Context, text: String) {
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
     context.startActivity(Intent.createChooser(send, "Send a wish"))
 }
+

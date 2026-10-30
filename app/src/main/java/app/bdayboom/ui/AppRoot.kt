@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.HealthAndSafety
 import app.bdayboom.ui.screens.CheckupScreen
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -53,6 +54,7 @@ import app.bdayboom.ui.screens.DetailScreen
 import app.bdayboom.ui.screens.EditScreen
 import app.bdayboom.ui.screens.ExportScreen
 import app.bdayboom.ui.screens.GroupsScreen
+import app.bdayboom.ui.screens.WishScreen
 import app.bdayboom.ui.screens.HelpScreen
 import app.bdayboom.ui.screens.HomeScreen
 import app.bdayboom.ui.screens.ImportScreen
@@ -67,7 +69,7 @@ object Routes {
     const val HOME = "home" // S01-S03
     const val CALENDAR = "calendar" // S08
     const val CONTACTS = "contacts"
-    const val WISHES = "wishes" // S09, S10
+    const val WISHES = "wishes?id={id}" // S09, S10; id = who the wish is for, empty for the library
     const val LINK = "link" // S11-S13
     const val PERSON = "person/{id}" // S05
     const val EDIT = "edit?id={id}&month={month}&day={day}" // S06, S07
@@ -80,6 +82,8 @@ object Routes {
     const val CHECKUP = "checkup" // fixes.md #1
 
     fun person(id: String) = "person/$id"
+    fun wishes(personId: String? = null) = "wishes?id=${personId ?: ""}"
+
     fun edit(id: String? = null, month: Int? = null, day: Int? = null) =
         "edit?id=${id ?: ""}&month=${month ?: 0}&day=${day ?: 0}"
 
@@ -133,6 +137,7 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
                         Triple("Reminder check-up", Icons.Outlined.HealthAndSafety, Routes.CHECKUP),
                         Triple("Import from contacts", Icons.Outlined.Contacts, Routes.IMPORT),
                         Triple("Groups", Icons.Outlined.Group, Routes.GROUPS),
+                        Triple("Wishes", Icons.Outlined.Mail, Routes.wishes()),
                         Triple("Backup & restore", Icons.Outlined.Backup, Routes.BACKUP),
                         Triple("Export as CSV", Icons.Outlined.FileDownload, Routes.EXPORT),
                         Triple("Reminders not arriving?", Icons.AutoMirrored.Outlined.HelpOutline, Routes.HELP),
@@ -155,8 +160,8 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
                         composable(Routes.HOME) { HomeScreen() }
                         composable(Routes.CALENDAR) { CalendarScreen() }
                         composable(Routes.CONTACTS) { ContactsScreen() }
-                        composable(Routes.WISHES) {
-                            StubScreen("Wishes", "Greeting cards and ready-made wishes", "Wishes and cards arrive in a later build. For now, send a wish from anyone's page or from the reminder itself.", tab = true)
+                        composable(Routes.WISHES, listOf(navArgument("id") { type = NavType.StringType; defaultValue = "" })) {
+                            WishScreen(it.arguments?.getString("id").orEmpty())
                         }
                         composable(Routes.LINK) {
                             StubScreen("Share link", "Friends add themselves", "Your personal link lets friends add their own birthday. It needs a small server, so it comes after the core app.", tab = true)

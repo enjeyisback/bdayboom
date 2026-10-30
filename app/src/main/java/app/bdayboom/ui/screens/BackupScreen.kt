@@ -1,5 +1,6 @@
 package app.bdayboom.ui.screens
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,10 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.SdCard
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import app.bdayboom.BuildConfig
+import app.bdayboom.data.AppSettings
+import app.bdayboom.data.AutoBackup
 import app.bdayboom.data.BackupException
 import app.bdayboom.data.BackupPreview
 import androidx.compose.material3.SnackbarDuration
@@ -33,6 +38,8 @@ import androidx.compose.material3.SnackbarResult
 import app.bdayboom.graph
 import app.bdayboom.ui.LocalChrome
 import app.bdayboom.ui.components.AppButton
+import app.bdayboom.ui.components.Banner
+import app.bdayboom.ui.components.BannerKind
 import app.bdayboom.ui.components.ButtonKind
 import app.bdayboom.ui.components.SectionHeader
 import app.bdayboom.ui.components.appCard
@@ -54,6 +61,9 @@ fun BackupScreen() {
     val t = AppTheme.type
     var busy by remember { mutableStateOf(false) }
     var pendingRestore by remember { mutableStateOf<Pair<Uri, BackupPreview>?>(null) }
+    val settings by g.settings.flow.collectAsState(initial = AppSettings())
+    val folder = settings.autoBackupFolder
+    val folderName = remember(folder) { folder?.let { AutoBackup.folderName(context, it) } }
 
     fun say(msg: String) = scope.launch { chrome.snackbar.showSnackbar(msg) }
 
@@ -80,6 +90,31 @@ fun BackupScreen() {
                 onFailure = { e -> say((e as? BackupException)?.message ?: "Couldn't read that file.") },
             )
         }
+    }
+
+    fun backUpNow(uri: String) {
+        busy = true
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) { AutoBackup.run(context, uri) }
+            busy = false
+            say(if (ok) "Backup saved in the folder" else "Couldn't save there. Choose the folder again.")
+        }
+    }
+    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        // Keep access after a restart, so the weekly backup can write without asking again.
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        }
+        scope.launch {
+            g.settings.setAutoBackupFolder(uri.toString())
+            backUpNow(uri.toString())
+        }
+    }
+    fun turnOff() = scope.launch {
+        folder?.let { f -> runCatching { context.contentResolver.releasePersistableUriPermission(Uri.parse(f), Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION) } }
+        g.settings.setAutoBackupFolder(null)
+        say("Automatic backup is off")
     }
 
     val safetyCopy = remember { java.io.File(context.filesDir, "before-restore.zip") }
@@ -137,6 +172,32 @@ fun BackupScreen() {
                     "Restore from a file", { open.launch(arrayOf("application/zip", "application/octet-stream")) },
                     Modifier.fillMaxWidth(), ButtonKind.Secondary, Icons.Outlined.FileUpload, enabled = !busy,
                 )
+            }
+
+            SectionHeader("Automatic backup", icon = Icons.Outlined.Schedule)
+            Column(Modifier.padding(horizontal = Space.s4).fillMaxWidth().appCard().padding(Space.s4), verticalArrangement = Arrangement.spacedBy(Space.s3)) {
+                if (folder == null) {
+                    Text(
+                        "Pick a folder once and BdayBoom saves a backup there every week. It keeps the last ${AutoBackup.KEEP}. " +
+                            "Tip: a folder your cloud app syncs gives you an off-phone copy too.",
+                        style = t.sm, color = c.textMuted,
+                    )
+                    AppButton("Choose a folder", { pickFolder.launch(null) }, Modifier.fillMaxWidth(), icon = Icons.Outlined.Schedule, enabled = !busy)
+                } else {
+                    if (settings.autoBackupFailed) {
+                        Banner("The last automatic backup couldn't be saved. Choose the folder again.", BannerKind.Warning) { pickFolder.launch(null) }
+                    }
+                    Text("Every week to ${folderName ?: "your folder"}", style = t.base, color = c.text)
+                    Text(
+                        if (settings.autoBackupLast == 0L) "No backup yet"
+                        else "Last saved " + java.time.Instant.ofEpochMilli(settings.autoBackupLast).atZone(java.time.ZoneId.systemDefault())
+                            .format(java.time.format.DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.MEDIUM, java.time.format.FormatStyle.SHORT)),
+                        style = t.sm, color = c.textMuted,
+                    )
+                    AppButton("Back up now", { backUpNow(folder) }, Modifier.fillMaxWidth(), ButtonKind.Secondary, loading = busy)
+                    AppButton("Change folder", { pickFolder.launch(null) }, Modifier.fillMaxWidth(), ButtonKind.Text, enabled = !busy)
+                    AppButton("Turn off", { turnOff() }, Modifier.fillMaxWidth(), ButtonKind.Text, enabled = !busy)
+                }
             }
 
             SectionHeader("Private by design", icon = Icons.Outlined.Lock)

@@ -37,8 +37,11 @@ class DataLayerTest {
     private val settings = object : BackupSettings {
         var s = AppSettings()
         override fun now() = s
-        override fun restore(hour: Int?, minute: Int, feb29: Feb29Rule?) {
-            s = s.copy(reminderHour = hour ?: s.reminderHour, reminderMinute = if (hour != null) minute else s.reminderMinute, feb29 = feb29 ?: s.feb29)
+        override fun restore(hour: Int?, minute: Int, feb29: Feb29Rule?, wishes: List<String>) {
+            s = s.copy(
+                reminderHour = hour ?: s.reminderHour, reminderMinute = if (hour != null) minute else s.reminderMinute, feb29 = feb29 ?: s.feb29,
+                myWishes = (s.myWishes + wishes).distinct(),
+            )
         }
     }
 
@@ -107,7 +110,7 @@ class DataLayerTest {
         repo.save(person("Zoë 🎂 Ñandú", 2, 29, null, notes = "leap"))
         repo.save(person("Asha", 1, 5, 1990))
         repo.setOffset(7, true)
-        settings.s = settings.s.copy(reminderHour = 8, reminderMinute = 15)
+        settings.s = settings.s.copy(reminderHour = 8, reminderMinute = 15, myWishes = listOf("Have a great one, {name}!"))
         val bytes = backupBytes()
 
         repo.deleteAllNow()
@@ -119,6 +122,7 @@ class DataLayerTest {
         assertEquals("leap", repo.peopleNow().first { it.day == 29 }.notes)
         assertEquals(listOf(0, 7), repo.offsetsNow())
         assertEquals(8 to 15, settings.s.reminderHour to settings.s.reminderMinute)
+        assertEquals(listOf("Have a great one, {name}!"), settings.s.myWishes)
     }
 
     // F08-E1

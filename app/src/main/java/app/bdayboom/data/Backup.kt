@@ -26,7 +26,7 @@ data class RestoreResult(val added: Int, val skipped: Int)
 /** The settings a backup carries. SettingsStore implements it; tests use a plain fake. */
 interface BackupSettings {
     fun now(): AppSettings
-    fun restore(hour: Int?, minute: Int, feb29: Feb29Rule?)
+    fun restore(hour: Int?, minute: Int, feb29: Feb29Rule?, wishes: List<String>)
 }
 
 class Backup(
@@ -165,6 +165,7 @@ class Backup(
                 hour = if (s.has("reminder_hour")) s.getInt("reminder_hour") else null,
                 minute = s.optInt("reminder_minute", 0),
                 feb29 = s.optStringOrNull("feb29")?.let { runCatching { Feb29Rule.valueOf(it) }.getOrNull() },
+                wishes = s.optJSONArray("my_wishes")?.let { a -> List(a.length()) { a.getString(it) } } ?: emptyList(),
             )
         }
         onChange()
@@ -180,7 +181,8 @@ class Backup(
             .put("exported_at", LocalDateTime.now().toString())
             .put(
                 "settings",
-                JSONObject().put("reminder_hour", s.reminderHour).put("reminder_minute", s.reminderMinute).put("feb29", s.feb29.name),
+                JSONObject().put("reminder_hour", s.reminderHour).put("reminder_minute", s.reminderMinute).put("feb29", s.feb29.name)
+                    .put("my_wishes", JSONArray(s.myWishes)),
             )
             .put("reminder_offsets", JSONArray(db.reminderQueries.offsets().executeAsList()))
             .put(

@@ -86,6 +86,7 @@ class DailyRefreshWorker(context: Context, params: WorkerParameters) : Coroutine
         g.repo.purgeNow()
         Photos.deleteOrphans(applicationContext, g.db.entryQueries.photoPaths().executeAsList().filterNotNull().toSet())
         g.scheduler.reschedule()
+        app.bdayboom.data.AutoBackup.runIfDue(applicationContext)
         return Result.success()
     }
 

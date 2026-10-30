@@ -158,4 +158,22 @@ class UiFlowsTest {
         openAdd(); check("Add")
         assertTrue("Unlabeled controls:\n" + unlabeled.joinToString("\n"), unlabeled.isEmpty())
     }
+
+    // Wishes: pick a ready wish for someone, then save it as your own (name turned back into {name})
+    @Test fun pickAReadyWishAndSaveItAsYourOwn() {
+        runBlocking { graph.repo.save(app.bdayboom.data.Person("", app.bdayboom.data.EntryType.Birthday, "Kabir Mehta", 1, 1, null, null, "", true)) }
+        waitForPerson("Kabir")
+        rule.onAllNodes(hasContentDescription("Kabir", substring = true) or hasText("Kabir Mehta"))[0].performClick()
+        waitForText("Send wish")
+        rule.onAllNodesWithText("Send wish")[0].performClick()
+        waitForText("Send a wish")
+
+        val ready = "Happy birthday, Kabir! 🎉 Wishing you a day as fun as you are."
+        rule.onNodeWithText(ready).performScrollTo().performClick()
+        rule.waitUntil(5_000) { rule.onAllNodesWithText(ready).fetchSemanticsNodes().size == 2 } // card + message box
+        rule.onNodeWithText("Save to my wishes").performScrollTo().performClick()
+        val template = "Happy birthday, {name}! 🎉 Wishing you a day as fun as you are."
+        rule.waitUntil(5_000) { graph.settings.now().myWishes.contains(template) }
+        runBlocking { graph.settings.removeWish(template) }
+    }
 }

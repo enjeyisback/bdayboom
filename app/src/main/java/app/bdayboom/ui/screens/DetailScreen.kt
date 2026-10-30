@@ -67,7 +67,6 @@ import app.bdayboom.ui.initials
 import app.bdayboom.ui.kind
 import app.bdayboom.ui.milestone
 import app.bdayboom.ui.monthName
-import app.bdayboom.ui.shareWish
 import app.bdayboom.ui.theme.AppTheme
 import app.bdayboom.ui.theme.Radius
 import app.bdayboom.ui.theme.Space
@@ -161,7 +160,7 @@ fun DetailScreen(id: String) {
             }
 
             Row(Modifier.padding(horizontal = Space.s4, vertical = Space.s3), horizontalArrangement = Arrangement.spacedBy(Space.s2)) {
-                AppButton("Send wish", { shareWish(context, p) }, Modifier.weight(1f), icon = Icons.Outlined.Mail)
+                AppButton("Send wish", { chrome.nav.navigate(Routes.wishes(p.id)) }, Modifier.weight(1f), icon = Icons.Outlined.Mail)
                 AppButton("Edit", { chrome.nav.navigate(Routes.edit(p.id)) }, Modifier.weight(1f), ButtonKind.Secondary, Icons.Outlined.Edit)
             }
 

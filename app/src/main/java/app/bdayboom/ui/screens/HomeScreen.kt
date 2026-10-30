@@ -57,7 +57,6 @@ import app.bdayboom.ui.components.SpotlightCard
 import app.bdayboom.ui.components.StatBanner
 import app.bdayboom.ui.monthName
 import app.bdayboom.ui.rowModel
-import app.bdayboom.ui.shareWish
 import app.bdayboom.ui.theme.Space
 import app.bdayboom.ui.whenText
 import kotlinx.coroutines.launch
@@ -202,7 +201,7 @@ fun HomeScreen() {
                 SpotlightCard(
                     u.person.name, turning,
                     if (u.person.type == EntryType.Birthday) "It's their day! A quick wish goes a long way." else "A day worth marking. Say something nice.",
-                    onWish = { shareWish(context, u.person) },
+                    onWish = { chrome.nav.navigate(Routes.wishes(u.person.id)) },
                     onGift = { chrome.nav.navigate(Routes.person(u.person.id)) },
                     secondaryLabel = "Open",
                     secondaryIcon = Icons.AutoMirrored.Outlined.OpenInNew,
