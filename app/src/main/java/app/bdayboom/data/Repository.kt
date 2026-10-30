@@ -88,6 +88,23 @@ class Repository(private val db: AppDatabase, private val onChange: () -> Unit) 
         Group(id, clean)
     }
 
+    /** False when another group already has that name (names are unique, ignoring case). */
+    suspend fun renameGroup(id: String, name: String): Boolean = withContext(io) {
+        val clean = name.trim()
+        val other = db.personGroupQueries.selectByName(clean).executeAsOneOrNull()
+        if (clean.isEmpty() || (other != null && other.id != id)) return@withContext false
+        db.personGroupQueries.rename(clean, System.currentTimeMillis(), id)
+        true
+    }
+
+    /** People in the group stay on the list, with no group. Cleared by hand so the people flows refresh. */
+    suspend fun deleteGroup(id: String) = withContext(io) {
+        db.transaction {
+            db.entryQueries.clearGroup(id)
+            db.personGroupQueries.delete(id)
+        }
+    }
+
     suspend fun setOffset(daysBefore: Int, on: Boolean) = withContext(io) {
         if (on) {
             val now = System.currentTimeMillis()

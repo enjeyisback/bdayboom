@@ -52,6 +52,7 @@ import app.bdayboom.ui.screens.ContactsScreen
 import app.bdayboom.ui.screens.DetailScreen
 import app.bdayboom.ui.screens.EditScreen
 import app.bdayboom.ui.screens.ExportScreen
+import app.bdayboom.ui.screens.GroupsScreen
 import app.bdayboom.ui.screens.HelpScreen
 import app.bdayboom.ui.screens.HomeScreen
 import app.bdayboom.ui.screens.ImportScreen
@@ -131,6 +132,7 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
                     listOf(
                         Triple("Reminder check-up", Icons.Outlined.HealthAndSafety, Routes.CHECKUP),
                         Triple("Import from contacts", Icons.Outlined.Contacts, Routes.IMPORT),
+                        Triple("Groups", Icons.Outlined.Group, Routes.GROUPS),
                         Triple("Backup & restore", Icons.Outlined.Backup, Routes.BACKUP),
                         Triple("Export as CSV", Icons.Outlined.FileDownload, Routes.EXPORT),
                         Triple("Reminders not arriving?", Icons.AutoMirrored.Outlined.HelpOutline, Routes.HELP),
@@ -182,9 +184,7 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
                         composable(Routes.CHECKUP) { CheckupScreen() }
                         composable(Routes.IMPORT) { ImportScreen() }
                         composable(Routes.BACKUP) { BackupScreen() }
-                        composable(Routes.GROUPS) {
-                            StubScreen("Groups", "Family, friends, work", "Renaming and deleting groups arrives in a later build. You can already create a group while adding someone.")
-                        }
+                        composable(Routes.GROUPS) { GroupsScreen() }
                         composable(Routes.EXPORT) { ExportScreen() }
                     }
                     if (route in Routes.tabs) {

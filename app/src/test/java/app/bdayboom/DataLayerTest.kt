@@ -14,6 +14,7 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -72,6 +73,14 @@ class DataLayerTest {
         assertEquals(6 to 15, after.month to after.day)
         assertEquals("loves tea", after.notes)
         assertEquals("grp-family", after.groupId)
+    }
+
+    @Test fun groupsRenameRefusesDuplicatesAndDeleteKeepsThePeople() = runBlocking {
+        repo.save(person("Asha", 3, 11, group = "grp-family"))
+        assertFalse(repo.renameGroup("grp-family", "friends")) // case-insensitive clash with "Friends"
+        assertTrue(repo.renameGroup("grp-family", "Home"))
+        repo.deleteGroup("grp-family")
+        assertNull(repo.peopleNow().single().groupId)
     }
 
     // F07-E2: a removed person no longer feeds the reminder engine

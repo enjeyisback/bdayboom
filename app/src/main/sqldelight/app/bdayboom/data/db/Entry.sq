@@ -68,3 +68,6 @@ SELECT id FROM entry WHERE id = ?;
 
 photoPaths:
 SELECT photo_path FROM entry WHERE photo_path IS NOT NULL;
+
+clearGroup:
+UPDATE entry SET group_id = NULL WHERE group_id = ?;
