@@ -1,0 +1,3 @@
+# Store text with LF line endings whatever the editor writes (Windows tools write CRLF).
+* text=auto eol=lf
+*.bat text eol=crlf
