@@ -128,6 +128,7 @@ fun EditScreen(id: String?, presetMonth: Int?, presetDay: Int?) {
     }
 
     fun save() {
+        if (saving) return // a second tap before the button shows "loading" must not save a copy
         nameError = if (name.isBlank()) "Add a name" else null
         dateError = when {
             !Dates.isValid(month, day) -> "${monthName(month)} has no day $day"
@@ -137,17 +138,20 @@ fun EditScreen(id: String?, presetMonth: Int?, presetDay: Int?) {
         }
         if (nameError != null || dateError != null) return
         saving = true
-        scope.launch {
-            val base = original ?: Person(id = "", type = type, name = name, month = month, day = day, year = null, groupId = null, notes = "", remindersEnabled = true)
-            g.repo.save(
-                base.copy(
-                    type = type, name = name.trim(), month = month, day = day, year = if (withYear) year else null,
-                    groupId = groupId, notes = notes.trim(), remindersEnabled = reminders, photoPath = photo,
-                ),
-            )
-            if (Build.VERSION.SDK_INT >= 33 && !g.notifier.canNotify()) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-            chrome.nav.popBackStack()
-            chrome.snackbar.showSnackbar(if (original == null) "${name.trim()} is in. We'll remind you on the day." else "Saved")
+        val base = original ?: Person(id = "", type = type, name = name, month = month, day = day, year = null, groupId = null, notes = "", remindersEnabled = true)
+        val toSave = base.copy(
+            type = type, name = name.trim(), month = month, day = day, year = if (withYear) year else null,
+            groupId = groupId, notes = notes.trim(), remindersEnabled = reminders, photoPath = photo,
+        )
+        val confirmation = if (original == null) "${toSave.name} is in. We'll remind you on the day." else "Saved"
+        // App-wide scope: this screen closes below, and its own scope would cancel the confirmation.
+        chrome.scope.launch {
+            g.repo.save(toSave)
+            withContext(Dispatchers.Main.immediate) { // navigation must happen on the main thread
+                if (Build.VERSION.SDK_INT >= 33 && !g.notifier.canNotify()) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                chrome.nav.popBackStack()
+            }
+            chrome.snackbar.showSnackbar(confirmation)
         }
     }
 

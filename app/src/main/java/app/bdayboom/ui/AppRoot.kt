@@ -83,7 +83,8 @@ object Routes {
 }
 
 /** Shared app chrome that screens reach for. */
-class Chrome(val nav: NavHostController, val snackbar: SnackbarHostState, val drawer: DrawerState)
+/** [scope] outlives any single screen: use it for messages shown after leaving one (e.g. "removed · Undo"). */
+class Chrome(val nav: NavHostController, val snackbar: SnackbarHostState, val drawer: DrawerState, val scope: kotlinx.coroutines.CoroutineScope)
 
 val LocalChrome = staticCompositionLocalOf<Chrome> { error("no chrome") }
 
@@ -111,7 +112,7 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
         nav.navigate(r) { launchSingleTop = true }
     }
 
-    CompositionLocalProvider(LocalChrome provides Chrome(nav, snackbar, drawer)) {
+    CompositionLocalProvider(LocalChrome provides Chrome(nav, snackbar, drawer, scope)) {
         ModalNavigationDrawer(
             drawerState = drawer,
             gesturesEnabled = route in Routes.tabs,

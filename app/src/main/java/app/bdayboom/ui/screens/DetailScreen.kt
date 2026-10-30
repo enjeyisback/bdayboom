@@ -220,9 +220,10 @@ fun DetailScreen(id: String) {
             confirmButton = {
                 AppButton("Remove", {
                     confirmDelete = false
-                    scope.launch {
+                    // App-wide scope: this screen closes below, and its own scope would cancel the Undo snackbar.
+                    chrome.scope.launch {
                         g.repo.softDelete(person.id)
-                        chrome.nav.popBackStack()
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main.immediate) { chrome.nav.popBackStack() }
                         val r = chrome.snackbar.showSnackbar("${person.name} removed", actionLabel = "Undo")
                         if (r == SnackbarResult.ActionPerformed) g.repo.undoDelete(person.id)
                     }

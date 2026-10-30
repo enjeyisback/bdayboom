@@ -14,15 +14,24 @@ import java.util.zip.ZipOutputStream
 
 class BackupException(message: String) : Exception(message)
 
+/** What a backup file holds, shown before restoring so the wrong file isn't picked by accident. */
+data class BackupPreview(val exportedAt: String, val people: Int, val photos: Int)
+
 data class RestoreResult(val added: Int, val skipped: Int)
 
 /**
  * Backup file = a zip holding backup.json (and, once photos exist, photos/).
  * schema_version lets older backups restore into newer apps; newer ones are refused with a clear message.
  */
+/** The settings a backup carries. SettingsStore implements it; tests use a plain fake. */
+interface BackupSettings {
+    fun now(): AppSettings
+    fun restore(hour: Int?, minute: Int, feb29: Feb29Rule?)
+}
+
 class Backup(
     private val db: AppDatabase,
-    private val settings: SettingsStore,
+    private val settings: BackupSettings,
     private val photoDir: File,
     private val onChange: () -> Unit,
 ) {
@@ -42,12 +51,28 @@ class Backup(
         }
     }
 
+    /** Reads the file and says what's in it. Changes nothing. */
+    fun preview(input: InputStream): BackupPreview {
+        val (json, photos) = readZip(input)
+        validate(json)
+        return BackupPreview(
+            exportedAt = json.optString("exported_at", ""),
+            people = json.optJSONArray("entries")?.length() ?: 0,
+            photos = photos.size,
+        )
+    }
+
+    private fun validate(json: JSONObject) {
+        if (json.optString("format") != FORMAT) throw BackupException("This file isn't a BdayBoom backup.")
+        if (json.optInt("schema_version", 0) > SCHEMA_VERSION) {
+            throw BackupException("This backup was made by a newer version of BdayBoom. Update the app, then try again.")
+        }
+    }
+
     /** replace = wipe the list first; otherwise only people and groups not already here are added. */
     fun restore(input: InputStream, replace: Boolean): RestoreResult {
         val (json, photos) = readZip(input)
-        if (json.optString("format") != FORMAT) throw BackupException("This file isn't a birthdays backup.")
-        val version = json.optInt("schema_version", 0)
-        if (version > SCHEMA_VERSION) throw BackupException("This backup was made by a newer version of the app. Update the app, then try again.")
+        validate(json)
 
         val now = System.currentTimeMillis()
         var added = 0
@@ -136,10 +161,11 @@ class Backup(
         }
 
         json.optJSONObject("settings")?.let { s ->
-            kotlinx.coroutines.runBlocking {
-                if (s.has("reminder_hour")) settings.setReminderTime(s.getInt("reminder_hour"), s.optInt("reminder_minute", 0))
-                s.optStringOrNull("feb29")?.let { runCatching { settings.setFeb29(Feb29Rule.valueOf(it)) } }
-            }
+            settings.restore(
+                hour = if (s.has("reminder_hour")) s.getInt("reminder_hour") else null,
+                minute = s.optInt("reminder_minute", 0),
+                feb29 = s.optStringOrNull("feb29")?.let { runCatching { Feb29Rule.valueOf(it) }.getOrNull() },
+            )
         }
         onChange()
         return RestoreResult(added, skipped)
@@ -201,7 +227,7 @@ class Backup(
                 }
             }
         }
-        return (json ?: throw BackupException("This file isn't a birthdays backup.")) to photos
+        return (json ?: throw BackupException("This file isn't a BdayBoom backup.")) to photos
     }
 
     companion object {

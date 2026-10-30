@@ -25,7 +25,7 @@ data class AppSettings(
 
 private val Context.store by preferencesDataStore("settings")
 
-class SettingsStore(private val context: Context) {
+class SettingsStore(private val context: Context) : BackupSettings {
     private val hour = intPreferencesKey("reminder_hour")
     private val minute = intPreferencesKey("reminder_minute")
     private val feb29 = stringPreferencesKey("feb29")
@@ -45,7 +45,14 @@ class SettingsStore(private val context: Context) {
     }
 
     /** For receivers and workers, already off the main thread. */
-    fun now(): AppSettings = runBlocking { flow.first() }
+    override fun now(): AppSettings = runBlocking { flow.first() }
+
+    override fun restore(hour: Int?, minute: Int, feb29: Feb29Rule?) {
+        runBlocking {
+            if (hour != null) setReminderTime(hour, minute)
+            if (feb29 != null) setFeb29(feb29)
+        }
+    }
 
     suspend fun setReminderTime(h: Int, m: Int) = context.store.edit { it[hour] = h; it[minute] = m }
     suspend fun setFeb29(rule: Feb29Rule) = context.store.edit { it[feb29] = rule.name }

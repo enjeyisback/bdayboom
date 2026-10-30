@@ -27,6 +27,7 @@ android {
         versionCode = 3
         versionName = "0.1.1"
         buildConfigField("String", "UPDATE_REPO", "\"" + (localProps.getProperty("UPDATE_REPO") ?: "").trim() + "\"")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -87,5 +88,12 @@ dependencies {
     implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
     implementation("androidx.glance:glance-appwidget:1.1.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    androidTestImplementation(composeBom)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("app.cash.sqldelight:sqlite-driver:2.0.2") // real SQLite on the JVM for data-layer tests
+    testImplementation("org.json:json:20240303") // Android's org.json is a stub in JVM unit tests
 }

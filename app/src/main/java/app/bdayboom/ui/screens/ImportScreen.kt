@@ -142,10 +142,12 @@ fun ImportScreen() {
                 AppButton(
                     if (picked.isEmpty()) "Nothing to import" else "Import ${picked.size}",
                     {
+                        if (importing) return@AppButton // a second tap must not import twice
                         importing = true
-                        scope.launch {
-                            val n = g.repo.importContacts(list.map { it.first }.filter { it.key in picked })
-                            chrome.nav.popBackStack()
+                        val chosen = list.map { it.first }.filter { it.key in picked }
+                        chrome.scope.launch { // app-wide: this screen closes below and would cancel the confirmation
+                            val n = g.repo.importContacts(chosen)
+                            withContext(Dispatchers.Main.immediate) { chrome.nav.popBackStack() } // navigation must happen on the main thread
                             chrome.snackbar.showSnackbar("$n added. We'll remind you on each day.")
                         }
                     },

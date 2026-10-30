@@ -27,6 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import app.bdayboom.BuildConfig
 import app.bdayboom.data.BackupException
+import app.bdayboom.data.BackupPreview
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
 import app.bdayboom.graph
 import app.bdayboom.ui.LocalChrome
 import app.bdayboom.ui.components.AppButton
@@ -50,7 +53,7 @@ fun BackupScreen() {
     val c = AppTheme.colors
     val t = AppTheme.type
     var busy by remember { mutableStateOf(false) }
-    var pendingRestore by remember { mutableStateOf<Uri?>(null) }
+    var pendingRestore by remember { mutableStateOf<Pair<Uri, BackupPreview>?>(null) }
 
     fun say(msg: String) = scope.launch { chrome.snackbar.showSnackbar(msg) }
 
@@ -65,24 +68,49 @@ fun BackupScreen() {
             say(if (result.isSuccess) "Backup saved" else "Couldn't save the backup. Try another folder.")
         }
     }
-    val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> pendingRestore = uri }
+    // BUG-001: read the file first and show what's in it, so the wrong backup isn't restored by accident.
+    val open = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val preview = withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openInputStream(uri)!!.use { g.backup.preview(it) } }
+            }
+            preview.fold(
+                onSuccess = { pendingRestore = uri to it },
+                onFailure = { e -> say((e as? BackupException)?.message ?: "Couldn't read that file.") },
+            )
+        }
+    }
+
+    val safetyCopy = remember { java.io.File(context.filesDir, "before-restore.zip") }
 
     fun restore(uri: Uri, replace: Boolean) {
         pendingRestore = null
         busy = true
         scope.launch {
             val result = withContext(Dispatchers.IO) {
-                runCatching { context.contentResolver.openInputStream(uri)!!.use { g.backup.restore(it, replace) } }
+                runCatching {
+                    // A Replace wipes the list: keep a copy of it first so it can be undone.
+                    if (replace) safetyCopy.outputStream().use { g.backup.write(it, BuildConfig.VERSION_NAME) }
+                    context.contentResolver.openInputStream(uri)!!.use { g.backup.restore(it, replace) }
+                }
             }
             busy = false
             result.fold(
                 onSuccess = { r ->
-                    say(
-                        buildString {
-                            append(if (r.added == 1) "1 person restored" else "${r.added} people restored")
-                            if (r.skipped > 0) append(" · ${r.skipped} already here")
-                        },
-                    )
+                    val msg = buildString {
+                        append(if (r.added == 1) "1 person restored" else "${r.added} people restored")
+                        if (r.skipped > 0) append(" · ${r.skipped} already here")
+                    }
+                    if (!replace) {
+                        say(msg)
+                    } else {
+                        val undo = chrome.snackbar.showSnackbar(msg, actionLabel = "Undo", duration = SnackbarDuration.Long)
+                        if (undo == SnackbarResult.ActionPerformed) {
+                            val back = withContext(Dispatchers.IO) { runCatching { safetyCopy.inputStream().use { g.backup.restore(it, replace = true) } } }
+                            say(if (back.isSuccess) "Your list is back as it was" else "Couldn't undo. Your previous list is saved in the app.")
+                        }
+                    }
                 },
                 onFailure = { e -> say((e as? BackupException)?.message ?: "Couldn't read that file.") },
             )
@@ -100,7 +128,9 @@ fun BackupScreen() {
                     style = t.sm, color = c.textMuted,
                 )
                 AppButton(
-                    "Save a backup", { save.launch("birthdays-backup-${LocalDate.now()}.zip") },
+                    "Save a backup", {
+                        save.launch("BdayBoom-backup-${java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmm"))}.zip")
+                    },
                     Modifier.fillMaxWidth(), icon = Icons.Outlined.FileDownload, loading = busy,
                 )
                 AppButton(
@@ -118,16 +148,31 @@ fun BackupScreen() {
         }
     }
 
-    pendingRestore?.let { uri ->
+    pendingRestore?.let { (uri, preview) ->
         AlertDialog(
             onDismissRequest = { pendingRestore = null },
             containerColor = c.surface,
             title = { Text("Restore this backup?", style = t.lg, color = c.text) },
             text = {
-                Text(
-                    "Add only adds people who aren't already on your list. Replace clears your list first, then restores the backup.",
-                    style = t.sm, color = c.textMuted,
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(Space.s3)) {
+                    Column(Modifier.fillMaxWidth().appCard(fill = c.surface2).padding(Space.s3)) {
+                        Text(
+                            if (preview.people == 1) "1 person" else "${preview.people} people",
+                            style = t.title, color = c.text,
+                        )
+                        Text(
+                            listOfNotNull(
+                                savedOn(preview.exportedAt),
+                                if (preview.photos > 0) "${preview.photos} ${if (preview.photos == 1) "photo" else "photos"}" else null,
+                            ).joinToString(" · "),
+                            style = t.sm, color = c.textMuted,
+                        )
+                    }
+                    Text(
+                        "Add only adds people who aren't already on your list. Replace clears your list first, and you can undo it right after.",
+                        style = t.sm, color = c.textMuted,
+                    )
+                }
             },
             confirmButton = {
                 Column(verticalArrangement = Arrangement.spacedBy(Space.s2)) {
@@ -139,3 +184,9 @@ fun BackupScreen() {
         )
     }
 }
+
+/** "Saved 30 Oct 2026, 1:58 pm" from the backup's exported_at, or null if it's missing or unreadable. */
+private fun savedOn(iso: String): String? = runCatching {
+    val t = java.time.LocalDateTime.parse(iso)
+    "Saved " + t.format(java.time.format.DateTimeFormatter.ofLocalizedDateTime(java.time.format.FormatStyle.MEDIUM, java.time.format.FormatStyle.SHORT))
+}.getOrNull()
