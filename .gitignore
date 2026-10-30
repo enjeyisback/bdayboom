@@ -16,3 +16,6 @@ dist/
 # product research, reference images and copied reviews: private, never published
 replica/
 .claude/
+
+# local handoff notes: private paths, device, key location. Never publish.
+HANDOFF.md
