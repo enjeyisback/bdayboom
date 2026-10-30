@@ -39,7 +39,7 @@
   html { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   body { margin: 0; background: var(--bg); color: var(--text); font: 400 17px/1.6 var(--body); }
-  img { max-width: 100%; display: block; }
+  img { max-width: 100%; height: auto; display: block; } /* height follows width, keeping the aspect ratio */
   a { color: inherit; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
