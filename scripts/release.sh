@@ -37,11 +37,22 @@ git add "$GRADLE"
 git commit -m "release: v$VERSION"
 git tag "v$VERSION"
 
+git push origin HEAD --tags
+REPO=$(grep '^UPDATE_REPO=' local.properties | cut -d= -f2 | tr -d '[:space:]')
+
 if command -v gh >/dev/null 2>&1; then
-  git push origin HEAD --tags
   gh release create "v$VERSION" "$APK" --title "v$VERSION" --notes "${NOTES:-Version $VERSION}"
-  echo "published: installed apps will offer v$VERSION within 6 hours, or at once via Settings > Version"
 else
-  echo "GitHub CLI not found. Push, then upload $APK to a new release tagged v$VERSION on GitHub:"
-  echo "  git push origin HEAD --tags"
+  # No GitHub CLI: use the GitHub API with the login git already stores (Git Credential Manager).
+  # The token stays in this process's memory; it is never printed or written to disk.
+  TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill 2>/dev/null | sed -n 's/^password=//p')
+  [[ -n "$TOKEN" ]] || { echo "no GitHub login found: install the GitHub CLI (gh auth login) and run: gh release create v$VERSION $APK"; exit 1; }
+  BODY=$(python -I -c 'import json,sys; print(json.dumps({"tag_name": sys.argv[1], "name": sys.argv[1], "body": sys.argv[2]}))' "v$VERSION" "${NOTES:-Version $VERSION}")
+  UPLOAD=$(curl -sf -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+    -d "$BODY" "https://api.github.com/repos/$REPO/releases" | python -I -c 'import json,sys; print(json.load(sys.stdin)["upload_url"].split("{")[0])')
+  curl -sf -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/vnd.android.package-archive" \
+    --data-binary @"$APK" "$UPLOAD?name=$(basename "$APK")" >/dev/null
+  unset TOKEN
 fi
+echo "published v$VERSION: https://github.com/$REPO/releases/tag/v$VERSION"
+echo "installed apps offer it within 6 hours of opening, or at once via Settings > Version"
