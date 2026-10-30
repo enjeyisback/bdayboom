@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccessTime
 import androidx.compose.material.icons.outlined.Alarm
-import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Palette
@@ -159,7 +159,7 @@ fun SettingsScreen() {
                     Icons.Outlined.RestartAlt,
                 ) { context.startActivity(OemAutostart.settingsIntent(context)) }
             }
-            SettingsItem("Reminders not arriving?", "Battery savers on some phones block them", Icons.Outlined.HelpOutline) { chrome.nav.navigate(Routes.HELP) }
+            SettingsItem("Reminders not arriving?", "Battery savers on some phones block them", Icons.AutoMirrored.Outlined.HelpOutline) { chrome.nav.navigate(Routes.HELP) }
 
             SectionHeader("Look", icon = Icons.Outlined.Palette)
             FlowRow(Modifier.padding(horizontal = Space.s4), horizontalArrangement = Arrangement.spacedBy(Space.s2)) {

@@ -14,7 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.Celebration
-import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarDuration
@@ -191,7 +191,7 @@ fun HomeScreen() {
                     onWish = { shareWish(context, u.person) },
                     onGift = { chrome.nav.navigate(Routes.person(u.person.id)) },
                     secondaryLabel = "Open",
-                    secondaryIcon = Icons.Outlined.OpenInNew,
+                    secondaryIcon = Icons.AutoMirrored.Outlined.OpenInNew,
                     photo = u.person.photoPath,
                 )
             }

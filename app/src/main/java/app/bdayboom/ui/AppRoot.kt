@@ -14,7 +14,7 @@ import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.HealthAndSafety
 import app.bdayboom.ui.screens.CheckupScreen
-import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.DrawerState
@@ -131,7 +131,7 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
                         Triple("Backup & restore", Icons.Outlined.Backup, Routes.BACKUP),
                         Triple("Export as PDF", Icons.Outlined.PictureAsPdf, Routes.EXPORT),
                         Triple("Settings", Icons.Outlined.Settings, Routes.SETTINGS),
-                        Triple("Reminders not arriving?", Icons.Outlined.HelpOutline, Routes.HELP),
+                        Triple("Reminders not arriving?", Icons.AutoMirrored.Outlined.HelpOutline, Routes.HELP),
                     ).forEach { (label, icon, r) ->
                         NavigationDrawerItem(
                             label = { Text(label, style = AppTheme.type.base) },
