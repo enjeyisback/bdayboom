@@ -24,8 +24,8 @@ android {
         applicationId = "app.bdayboom"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.0"
+        versionCode = 3
+        versionName = "0.1.1"
         buildConfigField("String", "UPDATE_REPO", "\"" + (localProps.getProperty("UPDATE_REPO") ?: "").trim() + "\"")
     }
 
