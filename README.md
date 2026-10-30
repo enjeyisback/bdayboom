@@ -4,7 +4,7 @@ Birthday reminders that actually arrive. Offline, no ads, no account: your list 
 
 ## Install
 
-Get the latest APK from the [Releases page](https://github.com/enjeyisback/birthday-wish-app/releases/latest).
+Get the latest APK from the [Releases page](https://github.com/enjeyisback/bdayboom/releases/latest).
 
 1. Open the link on your Android phone (Android 8.0 or newer) and download `BdayBoom-<version>.apk`.
 2. Tap the file and allow "install unknown apps" when Android asks.
@@ -33,7 +33,7 @@ Requires JDK 17 and the Android SDK (compileSdk 35).
 Optional `local.properties` entry, for the in-app updater:
 
 ```
-UPDATE_REPO=enjeyisback/birthday-wish-app
+UPDATE_REPO=enjeyisback/bdayboom
 ```
 
 Publishing a release is covered in [RELEASING.md](RELEASING.md).
