@@ -29,7 +29,6 @@ private fun variableFamily(res: Int, vararg weights: Int) = FontFamily(
 
 val Manrope = variableFamily(R.font.manrope, 400, 500, 600, 700, 800)
 val PlusJakartaSans = variableFamily(R.font.plus_jakarta_sans, 400, 500, 600, 700, 800)
-val PlayfairDisplay = variableFamily(R.font.playfair_display, 400, 500, 600, 700)
 
 val LocalAppColors = staticCompositionLocalOf { LightColors }
 val LocalAppType = staticCompositionLocalOf { AppTypography(PlusJakartaSans, Manrope) }
@@ -45,14 +44,13 @@ object AppTheme {
 }
 
 /**
- * Light = "Cake & Confetti" (cream, coral, Plus Jakarta Sans headings).
- * Dark  = "Midnight Gala" (obsidian, amber, Playfair Display headings).
- * Tokens map onto Material 3 so stock components pick them up too.
+ * Light = "Cake & Confetti" (cream, coral). Dark = "Midnight Gala" (obsidian, amber).
+ * Same fonts in both: Plus Jakarta Sans headings, Manrope body. Tokens map onto Material 3 so stock components pick them up too.
  */
 @Composable
 fun AppTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val c = if (dark) DarkColors else LightColors
-    val t = remember(dark) { AppTypography(if (dark) PlayfairDisplay else PlusJakartaSans, Manrope) }
+    val t = remember { AppTypography(PlusJakartaSans, Manrope) }
     val base = if (dark) darkColorScheme() else lightColorScheme()
     val scheme = base.copy(
         primary = c.accent,

@@ -1,0 +1,8 @@
+<resources>
+    <!-- Android 12+ always draws a splash. Keep it a plain background: the animated logo (ui/Splash.kt) follows. -->
+    <style name="Theme.App" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FFF8F4</item>
+        <item name="android:windowSplashScreenBackground">#FFF8F4</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+    </style>
+</resources>

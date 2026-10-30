@@ -1,11 +1,14 @@
 package app.bdayboom.update
 
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInstaller
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import androidx.core.content.FileProvider
 import app.bdayboom.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -135,7 +138,12 @@ class UpdateManager private constructor(private val context: Context) {
         }
     }
 
-    /** Opens Android's installer; asks for "install unknown apps" first if needed. Android itself checks the signature matches. */
+    /**
+     * Hands the APK to Android's PackageInstaller (a session, not the "open this file" screen). That makes BdayBoom
+     * the installer of record, so on Android 12+ updates install without a confirmation screen. Older Android, and
+     * some OEM skins, still show one. Android itself checks the signature matches; Play Protect may still scan,
+     * which an app can't (and shouldn't) skip.
+     */
     private fun install(apk: File) {
         if (!context.packageManager.canRequestPackageInstalls()) {
             context.startActivity(
@@ -144,12 +152,28 @@ class UpdateManager private constructor(private val context: Context) {
             )
             return // back from that screen, "Update now" installs the file that is already downloaded
         }
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.updates", apk)
-        context.startActivity(
-            Intent(Intent.ACTION_VIEW)
-                .setDataAndType(uri, "application/vnd.android.package-archive")
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK),
-        )
+        val installer = context.packageManager.packageInstaller
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+            setAppPackageName(context.packageName)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+        }
+        val id = installer.createSession(params)
+        installer.openSession(id).use { session ->
+            session.openWrite("base.apk", 0, apk.length()).use { out ->
+                apk.inputStream().use { it.copyTo(out) }
+                session.fsync(out)
+            }
+            val result = PendingIntent.getBroadcast(
+                context, id, Intent(context, InstallResultReceiver::class.java),
+                // Mutable: the system adds the status extras to this intent.
+                PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0),
+            )
+            session.commit(result.intentSender)
+        }
+    }
+
+    internal fun installFailed() {
+        _state.value = UpdateState.Failed("The update didn't install. Try again.")
     }
 
     /** Installs an already downloaded update (after the permission was granted), or downloads it again. */
@@ -177,6 +201,25 @@ class UpdateManager private constructor(private val context: Context) {
                 if (x != y) return x > y
             }
             return false
+        }
+    }
+}
+
+/** Result of an install session: shows Android's confirm screen when it asks for one, reports failures. */
+class InstallResultReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        when (val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
+            PackageInstaller.STATUS_PENDING_USER_ACTION -> {
+                @Suppress("DEPRECATION")
+                val confirm = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT) ?: return
+                context.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            PackageInstaller.STATUS_SUCCESS -> Unit // this process is replaced; the app comes back on the next open
+            else -> {
+                Log.w("Updates", "install failed: $status ${intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)}")
+                // Cancelled by the user is not an error worth a message.
+                if (status != PackageInstaller.STATUS_FAILURE_ABORTED) UpdateManager.get(context).installFailed()
+            }
         }
     }
 }

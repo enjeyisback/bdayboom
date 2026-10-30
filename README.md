@@ -51,6 +51,6 @@ Copyright (C) 2026 BdayBoom contributors.
 BdayBoom is free software: you can redistribute it and/or modify it under the terms of the [GNU General Public License v3.0](LICENSE) as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed in the hope that it will be useful, but **without any warranty**; see the licence for details.
 
 Bundled third-party parts keep their own licences:
-- **Fonts:** Plus Jakarta Sans, Playfair Display and Manrope, under the SIL Open Font License 1.1. The texts are in `app/src/main/assets/licenses`.
+- **Fonts:** Plus Jakarta Sans and Manrope, under the SIL Open Font License 1.1. The texts are in `app/src/main/assets/licenses`.
 - **Icons:** Material Symbols, under Apache 2.0.
 - **Libraries:** AndroidX, Jetpack Compose, Glance and WorkManager, and SQLDelight, all under Apache 2.0.

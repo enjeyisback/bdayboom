@@ -80,7 +80,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -145,7 +144,7 @@ enum class ButtonKind {
     /** grey fill ("Call", "Cancel") */ Neutral,
     /** text only */ Text,
     /** destructive */ Danger,
-    /** gradient, full-width save action */ Cta,
+    /** solid CTA colour, full-width save action */ Cta,
     /** on the spotlight hero: light = white pill, dark = amber */ OnHero,
     /** translucent pill on the hero */ OnHeroGhost,
 }
@@ -165,7 +164,6 @@ fun AppButton(
     val t = AppTheme.type
     val shape = RoundedCornerShape(Radius.pill)
     var border: BorderStroke? = null
-    var brush: Brush? = null
     val (bg, fg) = when (kind) {
         ButtonKind.Primary -> c.accent to c.onAccent
         ButtonKind.Secondary -> if (dark) {
@@ -175,9 +173,7 @@ fun AppButton(
         ButtonKind.Neutral -> c.surface2 to c.text
         ButtonKind.Text -> Color.Transparent to c.textMuted
         ButtonKind.Danger -> c.danger to c.onDanger
-        ButtonKind.Cta -> {
-            brush = Brush.horizontalGradient(listOf(c.ctaStart, c.ctaEnd)); Color.Unspecified to c.onCta
-        }
+        ButtonKind.Cta -> c.ctaStart to c.onCta
         ButtonKind.OnHero -> if (dark) c.accent to c.onAccent else Color.White to c.accent
         ButtonKind.OnHeroGhost -> {
             border = BorderStroke(1.dp, c.onHero.copy(alpha = 0.25f)); c.onHero.copy(alpha = 0.14f) to c.onHero
@@ -190,7 +186,7 @@ fun AppButton(
             .alpha(if (enabled) 1f else 0.38f)
             .then(if (kind == ButtonKind.Cta || kind == ButtonKind.Primary) Modifier.shadow(if (big) 8.dp else 2.dp, shape, ambientColor = c.accent, spotColor = c.accent) else Modifier)
             .clip(shape)
-            .then(if (brush != null) Modifier.background(brush!!) else Modifier.background(bg))
+            .background(bg)
             .then(if (border != null) Modifier.border(border!!, shape) else Modifier)
             .focusRing(shape)
             .clickable(enabled = enabled && !loading, role = Role.Button, onClick = onClick)
@@ -378,7 +374,7 @@ fun Avatar(
                 .then(if (ring != null) Modifier.border(2.dp, ring, CircleShape).padding(3.dp) else Modifier)
                 .size(size)
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(c.accentSoft, c.highlightSoft))),
+                .background(c.accentSoft),
             contentAlignment = Alignment.Center,
         ) {
             val img = image
@@ -495,7 +491,7 @@ fun PersonRow(model: PersonRowModel, onOpen: () -> Unit, onDelete: () -> Unit, m
     }
 }
 
-/** Today's hero card. Light: coral gradient. Dark: plum-to-twilight with an amber/violet edge. */
+/** Today's hero card. Solid fills only (no gradients): coral in light, deep plum with an amber edge in dark. */
 @Composable
 fun SpotlightCard(
     name: String,
@@ -518,8 +514,8 @@ fun SpotlightCard(
             .fillMaxWidth()
             .shadow(14.dp, shape, ambientColor = if (dark) c.accent else c.heroStart, spotColor = if (dark) c.accent else c.heroStart)
             .clip(shape)
-            .background(Brush.linearGradient(listOf(c.heroStart, c.heroEnd)))
-            .then(if (dark) Modifier.border(1.dp, Brush.linearGradient(listOf(c.accent.copy(alpha = 0.7f), c.highlight.copy(alpha = 0.5f))), shape) else Modifier)
+            .background(c.heroStart)
+            .then(if (dark) Modifier.border(1.dp, c.accent.copy(alpha = 0.5f), shape) else Modifier)
             .semantics(mergeDescendants = true) {}
             .padding(Space.s5),
     ) {
@@ -789,7 +785,7 @@ fun EmptyState(icon: ImageVector, title: String, body: String, actions: @Composa
         verticalArrangement = Arrangement.spacedBy(Space.s3),
     ) {
         Box(
-            Modifier.size(96.dp).clip(CircleShape).background(Brush.linearGradient(listOf(c.celebrateSoft, c.accentSoft))),
+            Modifier.size(96.dp).clip(CircleShape).background(c.accentSoft),
             contentAlignment = Alignment.Center,
         ) { Icon(icon, null, Modifier.size(44.dp), tint = c.accent) }
         Text(title, style = t.lg, color = c.text, textAlign = TextAlign.Center, modifier = Modifier.semantics { heading() })
@@ -861,7 +857,7 @@ fun AddButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
                 .size(width = 54.dp, height = 38.dp)
                 .shadow(6.dp, shape, ambientColor = c.accent, spotColor = c.accent)
                 .clip(shape)
-                .background(Brush.horizontalGradient(listOf(c.ctaStart, c.ctaEnd)))
+                .background(c.ctaStart)
                 .focusRing(shape),
             contentAlignment = Alignment.Center,
         ) {
@@ -957,7 +953,7 @@ fun MonthGrid(
                                 .size(40.dp)
                                 .then(if (isSel) Modifier.shadow(10.dp, CircleShape, ambientColor = c.accent, spotColor = c.accent) else Modifier)
                                 .clip(CircleShape)
-                                .then(if (isSel) Modifier.background(Brush.linearGradient(listOf(c.ctaStart, c.ctaEnd))) else Modifier)
+                                .then(if (isSel) Modifier.background(c.ctaStart) else Modifier)
                                 .then(if (date == today && !isSel) Modifier.border(2.dp, c.accent, CircleShape) else Modifier),
                             contentAlignment = Alignment.Center,
                         ) {

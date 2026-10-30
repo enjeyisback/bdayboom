@@ -67,10 +67,10 @@ val LightColors = AppColors(
     highlightSoft = Color(0xFFF0E7FF),
     onHighlightSoft = Color(0xFF42187E),
     heroStart = Color(0xFFC8323B),
-    heroEnd = Color(0xFFC9452F),
+    heroEnd = Color(0xFFC8323B),
     onHero = Color(0xFFFFFFFF),
     ctaStart = Color(0xFFC8323B),
-    ctaEnd = Color(0xFFC9452F),
+    ctaEnd = Color(0xFFC8323B),
     onCta = Color(0xFFFFFFFF),
     danger = Color(0xFFBA1A1A),
     onDanger = Color(0xFFFFFFFF),
@@ -100,11 +100,11 @@ val DarkColors = AppColors(
     onHighlight = Color(0xFF2C0051),
     highlightSoft = Color(0xFF2C1D45),
     onHighlightSoft = Color(0xFFEDD5FF),
-    heroStart = Color(0xFF3A1530),
-    heroEnd = Color(0xFF1B1C2E),
+    heroStart = Color(0xFF2A1830),
+    heroEnd = Color(0xFF2A1830),
     onHero = Color(0xFFFFFFFF),
     ctaStart = Color(0xFFFFB347),
-    ctaEnd = Color(0xFFFF5376),
+    ctaEnd = Color(0xFFFFB347),
     onCta = Color(0xFF0D0E15),
     danger = Color(0xFFFFB4AB),
     onDanger = Color(0xFF690005),
@@ -113,7 +113,7 @@ val DarkColors = AppColors(
     scrim = Color(0xFF000000),
 )
 
-/** Type scale. Display styles use the theme's display font (light: Plus Jakarta Sans, dark: Playfair Display). */
+/** Type scale. Display styles use the theme's display font (Plus Jakarta Sans in both themes). */
 @Immutable
 class AppTypography(display: FontFamily, body: FontFamily) {
     val micro = TextStyle(fontFamily = body, fontSize = 10.sp, lineHeight = 14.sp, fontWeight = FontWeight(700), letterSpacing = (0.06).em)

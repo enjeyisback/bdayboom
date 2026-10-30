@@ -236,7 +236,7 @@ fun SettingsScreen() {
             text = {
                 Text(
                     "BdayBoom is free software under the GNU GPL v3.0. Source: github.com/enjeyisback/bdayboom\n\n" +
-                        "Fonts: Plus Jakarta Sans, Playfair Display and Manrope, under the SIL Open Font License 1.1.\n\n" +
+                        "Fonts: Plus Jakarta Sans and Manrope, under the SIL Open Font License 1.1.\n\n" +
                         "Icons: Material Symbols, Apache License 2.0.\n\n" +
                         "Libraries: AndroidX, Jetpack Compose, Glance, WorkManager and SQLDelight (Apache 2.0).",
                     style = t.sm, color = c.textMuted,

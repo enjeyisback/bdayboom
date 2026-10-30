@@ -41,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -129,7 +128,7 @@ fun DetailScreen(id: String) {
                     .padding(horizontal = Space.s4, vertical = Space.s2)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Radius.xl))
-                    .background(Brush.linearGradient(listOf(c.heroStart, c.heroEnd)))
+                    .background(c.heroStart)
                     .padding(Space.s6),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

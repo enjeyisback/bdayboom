@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="img/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   /* Same roles and values as the app's tokens (light "Cake & Confetti", dark "Midnight Gala"). */
   :root {
@@ -21,7 +21,7 @@
     --text: #2d1f26; --muted: #6e5a63;
     --accent: #c8323b; --on-accent: #ffffff; --accent-soft: #ffe3e0; --on-accent-soft: #8c1520;
     --celebrate: #feb246; --on-celebrate: #2a1800; --celebrate-soft: #fff0d6; --on-celebrate-soft: #6f4600;
-    --hero-start: #c8323b; --hero-end: #c9452f; --on-hero: #ffffff;
+    --hero: #c8323b; --on-hero: #ffffff;
     --display: "Plus Jakarta Sans", Manrope, system-ui, sans-serif;
     --body: Manrope, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --shadow: 0 4px 16px -2px rgba(255,107,107,.10), 0 1px 3px rgba(45,31,38,.05);
@@ -32,8 +32,7 @@
       --text: #ffffff; --muted: #c4c7e0;
       --accent: #ffb347; --on-accent: #0d0e15; --accent-soft: #3a2c1c; --on-accent-soft: #ffd7a9;
       --celebrate: #ff5376; --on-celebrate: #0d0e15; --celebrate-soft: #3d1424; --on-celebrate-soft: #ffb2ba;
-      --hero-start: #3a1530; --hero-end: #1b1c2e; --on-hero: #ffffff;
-      --display: "Playfair Display", Georgia, serif;
+      --hero: #2a1830; --on-hero: #ffffff;
       --shadow: 0 8px 32px -4px rgba(0,0,0,.6);
     }
   }
@@ -52,9 +51,9 @@
   .eyebrow { font: 700 .75rem/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
   .muted { color: var(--muted); }
   .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 26px; border-radius: 999px;
-         background: linear-gradient(90deg, var(--hero-start), var(--hero-end)); color: var(--on-hero);
+         background: var(--accent); color: var(--on-accent);
          font: 700 1rem/1 var(--body); text-decoration: none; box-shadow: 0 8px 24px -6px rgba(200,50,59,.45); }
-  @media (prefers-color-scheme: dark) { .btn { background: linear-gradient(90deg, #ffb347, #ff5376); color: #0d0e15; box-shadow: 0 8px 24px -6px rgba(255,179,71,.4); } }
+  @media (prefers-color-scheme: dark) { .btn { box-shadow: 0 8px 24px -6px rgba(255,179,71,.4); } }
   .btn:hover { filter: brightness(1.05); }
   .btn svg { width: 20px; height: 20px; }
   header.top { padding: 18px 0; }
@@ -99,9 +98,9 @@
   summary { cursor: pointer; font-weight: 700; padding: 14px 0; min-height: 48px; display: flex; align-items: center; }
   details p { margin: 0 0 16px; }
   .cta { text-align: center; }
-  .cta .card { background: linear-gradient(135deg, var(--hero-start), var(--hero-end)); color: var(--on-hero); border: 0; padding: 48px 24px; border-radius: 28px; }
+  .cta .card { background: var(--hero); color: var(--on-hero); border: 0; padding: 48px 24px; border-radius: 28px; }
   .cta .btn { background: var(--on-hero); color: #c8323b; }
-  @media (prefers-color-scheme: dark) { .cta .card { border: 1px solid rgba(255,179,71,.45); } .cta .btn { background: linear-gradient(90deg,#ffb347,#ff5376); color: #0d0e15; } }
+  @media (prefers-color-scheme: dark) { .cta .card { border: 1px solid rgba(255,179,71,.45); } .cta .btn { background: var(--accent); color: var(--on-accent); } }
   footer { padding: 36px 0 48px; font-size: .9rem; }
   footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; }
 </style>
