@@ -17,6 +17,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
@@ -187,5 +189,15 @@ class UiFlowsTest {
         runBlocking { graph.settings.markWished(id, today) }
         waitForText("Sent")
         waitForText("Wish sent. Nice one.")
+    }
+
+    // Store reviews: a sideways flick while scrolling deleted people. Rows don't delete on swipe any more.
+    @Test fun swipingARowDoesNotDeleteAnyone() {
+        runBlocking { graph.repo.save(app.bdayboom.data.Person("", app.bdayboom.data.EntryType.Birthday, "Dev Patel", 6, 15, null, null, "", true)) }
+        waitForPerson("Dev Patel")
+        rule.onAllNodes(hasContentDescription("Dev Patel", substring = true))[0].performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        Thread.sleep(500)
+        assertEquals(1, graph.repo.peopleNow().size)
     }
 }

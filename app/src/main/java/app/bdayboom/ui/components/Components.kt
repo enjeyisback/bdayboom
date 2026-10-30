@@ -1,5 +1,7 @@
 package app.bdayboom.ui.components
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -42,12 +44,10 @@ import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
@@ -63,16 +63,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -83,12 +78,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -439,38 +432,22 @@ private fun initialsOf(name: String) = name.split(" ").mapNotNull { w -> w.first
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PersonRow(model: PersonRowModel, onOpen: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+/**
+ * One person in a list. No swipe-to-delete: a sideways flick while scrolling fast deleted people by accident
+ * (store reviews said the same). Removing someone is done from their page, which asks first and offers Undo.
+ */
+fun PersonRow(model: PersonRowModel, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val c = AppTheme.colors
     val t = AppTheme.type
     val shape = RoundedCornerShape(Radius.lg)
-    val state = rememberSwipeToDismissBoxState(
-        confirmValueChange = {
-            if (it == SwipeToDismissBoxValue.EndToStart) onDelete()
-            false // the list removes the row; snapping back lets Undo restore it in place
-        },
-        positionalThreshold = { total -> total * 0.4f },
-    )
-    SwipeToDismissBox(
-        state = state,
-        enableDismissFromStartToEnd = false,
-        modifier = modifier.padding(horizontal = Space.s4, vertical = 6.dp),
-        backgroundContent = {
-            Box(
-                Modifier.fillMaxSize().clip(shape).background(c.danger).padding(horizontal = Space.s6),
-                contentAlignment = Alignment.CenterEnd,
-            ) { Icon(Icons.Outlined.Delete, null, tint = c.onDanger) }
-        },
-    ) {
+    Box(modifier.padding(horizontal = Space.s4, vertical = 6.dp)) {
         Row(
             Modifier
                 .fillMaxWidth()
                 .appCard(shape)
                 .focusRing(shape)
                 .clickable(onClickLabel = "Open", role = Role.Button, onClick = onOpen)
-                .clearAndSetSemantics {
-                    contentDescription = model.spoken
-                    customActions = listOf(CustomAccessibilityAction("Delete") { onDelete(); true })
-                }
+                .clearAndSetSemantics { contentDescription = model.spoken }
                 .heightIn(min = Layout.rowMinHeight)
                 .padding(Space.s4),
             verticalAlignment = Alignment.CenterVertically,

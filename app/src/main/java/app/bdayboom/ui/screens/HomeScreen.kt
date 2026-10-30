@@ -1,5 +1,7 @@
 package app.bdayboom.ui.screens
 
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -17,16 +18,12 @@ import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -133,14 +130,6 @@ fun HomeScreen() {
         val later = if (byName) emptyMap() else shown.filter { it.daysLeft > 7 }.groupBy { YearMonth.from(it.next) }
         val alphabetical = if (byName) shown.filter { !it.isToday }.sortedBy { it.person.name.lowercase() } else emptyList()
 
-        fun delete(u: Upcoming) {
-            scope.launch {
-                g.repo.softDelete(u.person.id)
-                val r = chrome.snackbar.showSnackbar("${u.person.name} removed", actionLabel = "Undo", duration = SnackbarDuration.Short)
-                if (r == SnackbarResult.ActionPerformed) g.repo.undoDelete(u.person.id)
-            }
-        }
-
         LazyColumn(Modifier.fillMaxSize()) {
             item {
                 Spacer(Modifier.height(Space.s2))
@@ -216,7 +205,7 @@ fun HomeScreen() {
             if (week.isNotEmpty()) {
                 item { SectionHeader("This week", icon = Icons.Outlined.Cake, trailing = count(week.size)) }
                 items(week, key = { "${it.person.id}-${it.eventLabel ?: "primary"}" }) { u ->
-                    PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, { delete(u) }, Modifier.animateItem())
+                    PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, Modifier.animateItem())
                 }
             }
             later.forEach { (ym, list) ->
@@ -225,13 +214,13 @@ fun HomeScreen() {
                     SectionHeader(title, icon = Icons.Outlined.CalendarMonth, trailing = count(list.size))
                 }
                 items(list, key = { "${it.person.id}-${it.eventLabel ?: "primary"}" }) { u ->
-                    PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, { delete(u) }, Modifier.animateItem())
+                    PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, Modifier.animateItem())
                 }
             }
             if (alphabetical.isNotEmpty()) {
                 item { SectionHeader("A to Z", icon = Icons.Outlined.Cake, trailing = count(alphabetical.size)) }
                 items(alphabetical, key = { "${it.person.id}-${it.eventLabel ?: "primary"}" }) { u ->
-                    PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, { delete(u) }, Modifier.animateItem())
+                    PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, Modifier.animateItem())
                 }
             }
             item { Spacer(Modifier.height(Space.s8)) }
