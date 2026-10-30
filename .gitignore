@@ -15,3 +15,4 @@ dist/
 
 # product research, reference images and copied reviews: private, never published
 replica/
+.claude/
