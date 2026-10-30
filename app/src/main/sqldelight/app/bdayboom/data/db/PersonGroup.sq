@@ -1,0 +1,39 @@
+CREATE TABLE person_group (
+  id         TEXT    NOT NULL PRIMARY KEY,
+  name       TEXT    NOT NULL COLLATE NOCASE UNIQUE,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX person_group_sort_idx ON person_group (sort_order);
+
+INSERT INTO person_group (id, name, sort_order, created_at, updated_at) VALUES ('grp-family', 'Family', 0, 0, 0);
+INSERT INTO person_group (id, name, sort_order, created_at, updated_at) VALUES ('grp-friends', 'Friends', 1, 0, 0);
+INSERT INTO person_group (id, name, sort_order, created_at, updated_at) VALUES ('grp-work', 'Work', 2, 0, 0);
+
+selectAll:
+SELECT * FROM person_group ORDER BY sort_order, name;
+
+selectByName:
+SELECT * FROM person_group WHERE name = ?;
+
+maxSort:
+SELECT coalesce(max(sort_order), -1) FROM person_group;
+
+insert:
+INSERT INTO person_group (id, name, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?);
+
+rename:
+UPDATE person_group SET name = :name, updated_at = :now WHERE id = :id;
+
+delete:
+DELETE FROM person_group WHERE id = ?;
+
+selectById:
+SELECT * FROM person_group WHERE id = ?;
+
+insertOrIgnore:
+INSERT OR IGNORE INTO person_group (id, name, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?);
+
+deleteAll:
+DELETE FROM person_group;

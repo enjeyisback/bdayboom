@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Debug-only design system catalog: every primitive, light and dark. -->
+        <activity
+            android:name=".design.DesignCatalogActivity"
+            android:exported="true"
+            android:label="Design catalog">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Debug-only adb hooks: seed, clear, set reminder time, status. Never in release. -->
+        <receiver
+            android:name=".debug.DebugReceiver"
+            android:exported="true" />
+    </application>
+</manifest>

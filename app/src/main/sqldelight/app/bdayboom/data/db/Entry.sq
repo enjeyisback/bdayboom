@@ -1,0 +1,70 @@
+-- Birthdays are floating dates (month, day, optional year), never timestamps.
+CREATE TABLE entry (
+  id                   TEXT    NOT NULL PRIMARY KEY,
+  type                 TEXT    NOT NULL DEFAULT 'birthday' CHECK (type IN ('birthday', 'anniversary', 'event')),
+  name                 TEXT    NOT NULL CHECK (length(trim(name)) > 0),
+  month                INTEGER NOT NULL CHECK (month BETWEEN 1 AND 12),
+  day                  INTEGER NOT NULL CHECK (day BETWEEN 1 AND 31),
+  year                 INTEGER CHECK (year IS NULL OR year BETWEEN 1800 AND 2200),
+  second_label         TEXT,
+  second_month         INTEGER CHECK (second_month IS NULL OR second_month BETWEEN 1 AND 12),
+  second_day           INTEGER CHECK (second_day IS NULL OR second_day BETWEEN 1 AND 31),
+  second_year          INTEGER,
+  photo_path           TEXT,
+  group_id             TEXT REFERENCES person_group (id) ON DELETE SET NULL,
+  notes                TEXT    NOT NULL DEFAULT '',
+  reminders_enabled    INTEGER NOT NULL DEFAULT 1 CHECK (reminders_enabled IN (0, 1)),
+  source               TEXT    NOT NULL DEFAULT 'manual' CHECK (source IN ('manual', 'contacts', 'link', 'restore')),
+  contact_lookup_key   TEXT,
+  remote_submission_id TEXT,
+  created_at           INTEGER NOT NULL,
+  updated_at           INTEGER NOT NULL,
+  deleted_at           INTEGER,
+  CHECK (month NOT IN (4, 6, 9, 11) OR day <= 30),
+  CHECK (month != 2 OR day <= 29),
+  CHECK ((second_month IS NULL) = (second_day IS NULL))
+);
+CREATE INDEX entry_month_day_idx ON entry (month, day) WHERE deleted_at IS NULL;
+CREATE INDEX entry_group_idx ON entry (group_id) WHERE deleted_at IS NULL;
+CREATE INDEX entry_name_idx ON entry (name COLLATE NOCASE);
+CREATE INDEX entry_deleted_idx ON entry (deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE UNIQUE INDEX entry_contact_key_uq ON entry (contact_lookup_key) WHERE contact_lookup_key IS NOT NULL;
+CREATE UNIQUE INDEX entry_submission_uq ON entry (remote_submission_id) WHERE remote_submission_id IS NOT NULL;
+
+selectActive:
+SELECT * FROM entry WHERE deleted_at IS NULL ORDER BY month, day, name;
+
+selectById:
+SELECT * FROM entry WHERE id = ?;
+
+selectByContactKey:
+SELECT * FROM entry WHERE contact_lookup_key = ?;
+
+insert:
+INSERT INTO entry VALUES ?;
+
+update:
+UPDATE entry SET
+  type = :type, name = :name, month = :month, day = :day, year = :year,
+  second_label = :second_label, second_month = :second_month, second_day = :second_day, second_year = :second_year,
+  photo_path = :photo_path, group_id = :group_id, notes = :notes, reminders_enabled = :reminders_enabled,
+  contact_lookup_key = :contact_lookup_key, updated_at = :updated_at, deleted_at = NULL
+WHERE id = :id;
+
+softDelete:
+UPDATE entry SET deleted_at = :now, updated_at = :now WHERE id = :id;
+
+undoDelete:
+UPDATE entry SET deleted_at = NULL WHERE id = ?;
+
+purgeDeleted:
+DELETE FROM entry WHERE deleted_at IS NOT NULL AND deleted_at < ?;
+
+deleteAll:
+DELETE FROM entry;
+
+selectByIdAny:
+SELECT id FROM entry WHERE id = ?;
+
+photoPaths:
+SELECT photo_path FROM entry WHERE photo_path IS NOT NULL;

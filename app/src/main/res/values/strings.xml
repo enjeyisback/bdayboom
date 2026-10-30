@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">BdayBoom</string>
+    <string name="widget_upcoming_description">Who\'s next, at a glance</string>
+    <string name="widget_next_description">A countdown to the next birthday</string>
+</resources>

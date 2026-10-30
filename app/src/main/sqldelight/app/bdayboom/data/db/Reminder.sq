@@ -1,0 +1,50 @@
+-- Global reminder offsets: 0 = on the day, 1 = day before, 7 = a week before...
+CREATE TABLE reminder_offset (
+  id          TEXT    NOT NULL PRIMARY KEY,
+  days_before INTEGER NOT NULL UNIQUE CHECK (days_before BETWEEN 0 AND 60),
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL
+);
+INSERT INTO reminder_offset (id, days_before, created_at, updated_at) VALUES ('off-0', 0, 0, 0);
+
+-- One row per notification shown: reschedules and duplicate broadcasts can't notify twice.
+CREATE TABLE fired_reminder (
+  id              TEXT    NOT NULL PRIMARY KEY,
+  entry_id        TEXT    NOT NULL REFERENCES entry (id) ON DELETE CASCADE,
+  occurrence_date TEXT    NOT NULL,
+  days_before     INTEGER NOT NULL,
+  fired_at        INTEGER NOT NULL,
+  created_at      INTEGER NOT NULL,
+  updated_at      INTEGER NOT NULL,
+  UNIQUE (entry_id, occurrence_date, days_before)
+);
+CREATE INDEX fired_reminder_entry_idx ON fired_reminder (entry_id);
+CREATE INDEX fired_reminder_fired_idx ON fired_reminder (fired_at);
+
+offsets:
+SELECT days_before FROM reminder_offset ORDER BY days_before;
+
+addOffset:
+INSERT OR IGNORE INTO reminder_offset (id, days_before, created_at, updated_at) VALUES (?, ?, ?, ?);
+
+removeOffset:
+DELETE FROM reminder_offset WHERE days_before = ?;
+
+wasFired:
+SELECT count(*) FROM fired_reminder WHERE entry_id = ? AND occurrence_date = ? AND days_before = ?;
+
+markFired:
+INSERT OR IGNORE INTO fired_reminder (id, entry_id, occurrence_date, days_before, fired_at, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+purgeFired:
+DELETE FROM fired_reminder WHERE fired_at < ?;
+
+recentFired:
+SELECT * FROM fired_reminder ORDER BY fired_at DESC LIMIT 20;
+
+deleteAllOffsets:
+DELETE FROM reminder_offset;
+
+selectAllFired:
+SELECT * FROM fired_reminder;
