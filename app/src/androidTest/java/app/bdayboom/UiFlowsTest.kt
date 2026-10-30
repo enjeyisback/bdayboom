@@ -42,6 +42,7 @@ class UiFlowsTest {
         graph.repo.deleteAllNow()
         graph.settings.setReminderTime(23, 59) // tests add people "today": don't notify the phone's owner
         graph.settings.setCheckupSeen()
+        graph.settings.setDailySummary(false) // no morning summary popping up mid-test
         rule.waitForIdle()
     }
 

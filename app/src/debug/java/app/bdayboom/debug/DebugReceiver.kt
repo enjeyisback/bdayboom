@@ -95,6 +95,11 @@ class DebugReceiver : BroadcastReceiver() {
                 Intent(context, app.bdayboom.reminders.WishedReceiver::class.java)
                     .putExtra(app.bdayboom.reminders.WishedReceiver.EXTRA_ID, intent.getIntExtra("id", 0)),
             )
+            // The morning summary as it would read today (the Monday-only rule can make it empty: then a sample).
+            "summary" -> g.notifier.showSummary(
+                app.bdayboom.reminders.DailySummary.build(g.repo.peopleNow(), LocalDate.now(), g.settings.now().feb29)
+                    ?: app.bdayboom.reminders.Summary("(debug) nothing to say today", "A quiet day that isn't Monday: no summary is sent."),
+            )
             "status" -> Unit
         }
         val next = g.scheduler.reschedule()

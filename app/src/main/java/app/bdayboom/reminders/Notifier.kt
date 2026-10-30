@@ -26,6 +26,33 @@ class Notifier(private val context: Context) {
                 description = "On the day and the days before, at the time you choose"
             },
         )
+        // Its own channel, so muting the summary in Android settings never mutes birthday reminders.
+        nm.createNotificationChannel(
+            NotificationChannel(SUMMARY_CHANNEL, "Morning summary", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "At 9:00: who's celebrating today and this week"
+            },
+        )
+    }
+
+    fun showSummary(s: Summary) {
+        if (!canNotify()) return
+        ensureChannel()
+        val open = PendingIntent.getActivity(
+            context, SUMMARY_ID,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        post(
+            SUMMARY_ID,
+            NotificationCompat.Builder(context, SUMMARY_CHANNEL)
+                .setSmallIcon(R.drawable.ic_stat_cake)
+                .setContentTitle(s.title)
+                .setContentText(s.body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(s.body))
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .build(),
+        )
     }
 
     fun canNotify(): Boolean {
@@ -133,6 +160,8 @@ class Notifier(private val context: Context) {
 
     companion object {
         const val CHANNEL = "reminders"
+        const val SUMMARY_CHANNEL = "summary"
+        const val SUMMARY_ID = 4243
         const val TEST_ID = 4242
     }
 }

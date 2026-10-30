@@ -33,6 +33,10 @@ data class AppSettings(
     val myWishes: List<String> = emptyList(),
     /** "personId|yyyy-MM-dd" for each day a wish was sent (kept a week). */
     val wished: Set<String> = emptySet(),
+    /** The 9:00 morning summary (fixed time; it can only be turned off). */
+    val dailySummary: Boolean = true,
+    /** yyyy-MM-dd of the last summary sent, so it goes out once a day. */
+    val summaryLast: String? = null,
 ) {
     fun wishedOn(personId: String, date: LocalDate) = "$personId|$date" in wished
 }
@@ -51,6 +55,8 @@ class SettingsStore(private val context: Context) : BackupSettings {
     private val autoFailed = booleanPreferencesKey("auto_backup_failed")
     private val wishes = stringPreferencesKey("my_wishes")
     private val wishedDays = stringSetPreferencesKey("wished")
+    private val summaryOn = booleanPreferencesKey("daily_summary")
+    private val summaryDay = stringPreferencesKey("summary_last")
 
     val flow: Flow<AppSettings> = context.store.data.map { p ->
         AppSettings(
@@ -64,6 +70,8 @@ class SettingsStore(private val context: Context) : BackupSettings {
             autoBackupLast = p[autoLast] ?: 0,
             autoBackupFailed = p[autoFailed] ?: false,
             wished = p[wishedDays] ?: emptySet(),
+            dailySummary = p[summaryOn] ?: true,
+            summaryLast = p[summaryDay],
             myWishes = p[wishes]?.let { j -> runCatching { JSONArray(j).let { a -> List(a.length()) { a.getString(it) } } }.getOrNull() } ?: emptyList(),
         )
     }
@@ -93,6 +101,9 @@ class SettingsStore(private val context: Context) : BackupSettings {
         it[autoFailed] = !ok
         if (ok) it[autoLast] = at
     }
+
+    suspend fun setDailySummary(on: Boolean) = context.store.edit { it[summaryOn] = on }
+    suspend fun setSummaryLast(day: LocalDate) = context.store.edit { it[summaryDay] = day.toString() }
 
     /** Records that [personId] was wished on [date]; drops entries older than a week so the set stays tiny. */
     suspend fun markWished(personId: String, date: LocalDate) = context.store.edit { p ->

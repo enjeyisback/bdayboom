@@ -15,7 +15,7 @@ import java.time.ZoneId
 import java.util.concurrent.Executors
 
 /**
- * Keeps exactly one alarm set: the soonest pending reminder. Every data change, boot, time change and
+ * Keeps exactly one alarm set: the soonest pending reminder or morning summary. Every data change, boot, time change and
  * the daily worker call [reschedule]; runs are serialised on one thread so overlapping triggers collapse.
  */
 class ReminderScheduler(
@@ -43,7 +43,15 @@ class ReminderScheduler(
             if (repo().markFiredNow(due.person.id, key, due.daysBefore)) notifier.show(due, s.keepUntilWished)
         }
 
-        val next = ReminderEngine.nextAt(people, offsets, time, s.feb29, now)
+        // Morning summary: shares this one alarm, so it needs no extra wake-ups or permissions.
+        if (s.dailySummary && DailySummary.shouldSendNow(now, s.summaryLast)) {
+            DailySummary.build(people, now.toLocalDate(), s.feb29)?.let { notifier.showSummary(it) }
+            kotlinx.coroutines.runBlocking { settings.setSummaryLast(now.toLocalDate()) }
+        }
+
+        val nextReminder = ReminderEngine.nextAt(people, offsets, time, s.feb29, now)
+        val nextSummary = if (s.dailySummary) DailySummary.nextAt(now, settings.now().summaryLast) else null
+        val next = listOfNotNull(nextReminder, nextSummary).minOrNull()
         setAlarm(next)
         WidgetRefresh.all(context)
         Log.i(TAG, "next reminder at $next (exact=${canExact()})")
