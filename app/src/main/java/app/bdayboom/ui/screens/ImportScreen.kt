@@ -1,4 +1,4 @@
-﻿package app.bdayboom.ui.screens
+package app.bdayboom.ui.screens
 
 import android.Manifest
 import android.content.Intent

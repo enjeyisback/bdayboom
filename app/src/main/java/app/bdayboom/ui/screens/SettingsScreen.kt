@@ -75,6 +75,7 @@ private val offsetChoices = listOf(
     3 to ("3 days before" to "A quick heads-up"),
     7 to ("1 week before" to "Plan something"),
     14 to ("2 weeks before" to "Shop for a gift"),
+    30 to ("1 month before" to "Book the big plans"),
 )
 
 /** S15 settings. */

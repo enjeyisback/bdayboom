@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Deep violet behind the logo. Keep in sync with scripts/make_icons.py -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <gradient android:angle="315" android:startColor="#FFC8323B" android:endColor="#FFFFB347" />
+    <gradient android:angle="270" android:startColor="#FF6B2BF0" android:centerColor="#FF2A0FB8" android:endColor="#FF12037A" />
 </shape>

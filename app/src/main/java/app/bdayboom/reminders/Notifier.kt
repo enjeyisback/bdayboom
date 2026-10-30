@@ -110,6 +110,7 @@ class Notifier(private val context: Context) {
             1 -> "tomorrow"
             7 -> "in a week"
             14 -> "in two weeks"
+            30 -> "in a month"
             else -> "in ${due.daysBefore} days"
         }
         if (due.label != null) {

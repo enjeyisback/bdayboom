@@ -1,3 +1,5 @@
+<img src="docs/img/icon-512.png" alt="BdayBoom" width="128">
+
 # BdayBoom 🎉
 
 Birthday reminders that actually arrive. Offline, no ads, no account: your list stays on your phone.

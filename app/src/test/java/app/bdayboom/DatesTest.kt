@@ -91,6 +91,19 @@ class DatesTest {
         assertNull(ReminderEngine.nextAt(listOf(person(10, 30, on = false)), listOf(0), nine, Feb29Rule.Feb28, now))
     }
 
+    @Test fun monthBeforeOffsetFiresThirtyDaysAhead() {
+        val now = LocalDateTime.of(2026, 10, 30, 12, 0)
+        assertEquals(LocalDateTime.of(2026, 11, 5, 9, 0), ReminderEngine.nextAt(listOf(person(12, 5)), listOf(30), nine, Feb29Rule.Feb28, now))
+    }
+
+    @Test fun secondDateGetsItsOwnLabelledReminder() {
+        val p = person(3, 1).copy(secondLabel = "Wedding", secondMonth = 10, secondDay = 30, secondYear = 2016)
+        val due = ReminderEngine.dueNow(listOf(p), listOf(0), nine, Feb29Rule.Feb28, LocalDateTime.of(2026, 10, 30, 9, 0))
+        assertEquals(1, due.size)
+        assertEquals("Wedding", due[0].label)
+        assertEquals(10, Dates.turning(due[0].year, due[0].occurrence))
+    }
+
     @Test fun leapDayReminderLandsOnFeb28() {
         val now = LocalDateTime.of(2027, 2, 1, 12, 0)
         assertEquals(LocalDateTime.of(2027, 2, 28, 9, 0), ReminderEngine.nextAt(listOf(person(2, 29, 2000)), listOf(0), nine, Feb29Rule.Feb28, now))
