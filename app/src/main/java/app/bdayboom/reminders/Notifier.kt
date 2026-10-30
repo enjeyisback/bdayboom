@@ -40,7 +40,7 @@ class Notifier(private val context: Context) {
         if (!canNotify()) return
         ensureChannel()
         val p = due.person
-        val id = "${p.id}|${due.occurrence}|${due.daysBefore}".hashCode()
+        val id = "${p.id}|${due.occurrence}|${due.label ?: ""}|${due.daysBefore}".hashCode()
         val sticky = keep && due.daysBefore == 0
 
         val open = PendingIntent.getActivity(
@@ -103,13 +103,17 @@ class Notifier(private val context: Context) {
     }
 
     private fun title(p: Person, due: Due): String {
-        val n = Dates.turning(p.year, due.occurrence)
+        val yr = due.year ?: p.year
+        val n = Dates.turning(yr, due.occurrence)
         val whenText = when (due.daysBefore) {
             0 -> "today"
             1 -> "tomorrow"
             7 -> "in a week"
             14 -> "in two weeks"
             else -> "in ${due.daysBefore} days"
+        }
+        if (due.label != null) {
+            return if (n != null) "${p.name}: $n years ${due.label.lowercase()} $whenText" else "${p.name}'s ${due.label.lowercase()} is $whenText"
         }
         return when (p.type) {
             EntryType.Birthday -> if (n != null) "${p.name} turns $n $whenText" else "${p.name}'s birthday is $whenText"

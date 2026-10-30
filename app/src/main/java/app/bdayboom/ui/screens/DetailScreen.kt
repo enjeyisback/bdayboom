@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.PersonOff
@@ -186,6 +187,35 @@ fun DetailScreen(id: String) {
                         Spacer(Modifier.width(Space.s2))
                         Text("Reminders are off for this person", style = t.sm, color = c.textMuted)
                     }
+                }
+            }
+
+            if (p.secondMonth != null && p.secondDay != null) {
+                val secLabel = p.secondLabel?.ifBlank { "Anniversary" } ?: "Anniversary"
+                val secUpcoming = Upcoming.of(
+                    p, today, settings.feb29,
+                    eventLabel = secLabel,
+                    customMonth = p.secondMonth,
+                    customDay = p.secondDay,
+                    customYear = p.secondYear,
+                )
+                SectionHeader(secLabel, icon = Icons.Outlined.FavoriteBorder)
+                Column(Modifier.padding(horizontal = Space.s4).fillMaxWidth().appCard().padding(Space.s4), verticalArrangement = Arrangement.spacedBy(Space.s2)) {
+                    val secFull = "${p.secondDay} ${monthName(p.secondMonth!!)}" + (p.secondYear?.let { " $it" } ?: "")
+                    if (p.secondYear != null) {
+                        val firstOcc = Dates.occurrenceIn(p.secondYear!!, p.secondMonth!!, p.secondDay!!, settings.feb29)
+                        Fact("Since ${weekday(firstOcc)}, $secFull")
+                    } else {
+                        Fact(secFull)
+                    }
+                    Fact("Next: ${weekday(secUpcoming.next)}, ${secUpcoming.next.dayOfMonth} ${monthName(secUpcoming.next.monthValue)} ${secUpcoming.next.year}")
+                    milestone(secUpcoming)?.let { Fact(it) }
+                    val secCountdown = when (secUpcoming.daysLeft) {
+                        0 -> "TODAY"
+                        1 -> "TOMORROW"
+                        else -> "IN ${secUpcoming.daysLeft} DAYS"
+                    }
+                    Text(secCountdown, style = t.sm.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = c.accent)
                 }
             }
 

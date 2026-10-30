@@ -31,7 +31,9 @@ import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -99,6 +101,13 @@ fun EditScreen(id: String?, presetMonth: Int?, presetDay: Int?) {
     var original by remember { mutableStateOf<Person?>(null) }
     var nameError by remember { mutableStateOf<String?>(null) }
     var dateError by remember { mutableStateOf<String?>(null) }
+    var hasSecondDate by rememberSaveable { mutableStateOf(false) }
+    var secondLabel by rememberSaveable { mutableStateOf("Anniversary") }
+    var secondMonth by rememberSaveable { mutableStateOf(1) }
+    var secondDay by rememberSaveable { mutableStateOf(1) }
+    var secondWithYear by rememberSaveable { mutableStateOf(false) }
+    var secondYear by rememberSaveable { mutableStateOf(thisYear - 5) }
+    var secondDateError by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     var newGroupOpen by remember { mutableStateOf(false) }
 
@@ -108,6 +117,12 @@ fun EditScreen(id: String?, presetMonth: Int?, presetDay: Int?) {
                 original = p
                 type = p.type; name = p.name; month = p.month; day = p.day
                 withYear = p.year != null; year = p.year ?: (thisYear - 30)
+                hasSecondDate = p.secondMonth != null && p.secondDay != null
+                secondLabel = p.secondLabel?.ifBlank { "Anniversary" } ?: "Anniversary"
+                secondMonth = p.secondMonth ?: 1
+                secondDay = p.secondDay ?: 1
+                secondWithYear = p.secondYear != null
+                secondYear = p.secondYear ?: (thisYear - 5)
                 groupId = p.groupId; notes = p.notes; reminders = p.remindersEnabled; photo = p.photoPath
             }
             loaded = true
@@ -136,11 +151,24 @@ fun EditScreen(id: String?, presetMonth: Int?, presetDay: Int?) {
             withYear && type == EntryType.Birthday && LocalDate.of(year, month, minOf(day, 28)).isAfter(LocalDate.now()) -> "That date is in the future"
             else -> null
         }
-        if (nameError != null || dateError != null) return
+        if (hasSecondDate) {
+            secondDateError = when {
+                !Dates.isValid(secondMonth, secondDay) -> "${monthName(secondMonth)} has no day $secondDay"
+                secondWithYear && secondMonth == 2 && secondDay == 29 && !java.time.Year.isLeap(secondYear.toLong()) -> "$secondYear had no 29 February"
+                else -> null
+            }
+        } else {
+            secondDateError = null
+        }
+        if (nameError != null || dateError != null || secondDateError != null) return
         saving = true
         val base = original ?: Person(id = "", type = type, name = name, month = month, day = day, year = null, groupId = null, notes = "", remindersEnabled = true)
         val toSave = base.copy(
             type = type, name = name.trim(), month = month, day = day, year = if (withYear) year else null,
+            secondLabel = if (hasSecondDate) secondLabel.trim().ifBlank { "Anniversary" } else null,
+            secondMonth = if (hasSecondDate) secondMonth else null,
+            secondDay = if (hasSecondDate) secondDay else null,
+            secondYear = if (hasSecondDate && secondWithYear) secondYear else null,
             groupId = groupId, notes = notes.trim(), remindersEnabled = reminders, photoPath = photo,
         )
         val confirmation = if (original == null) "${toSave.name} is in. We'll remind you on the day." else "Saved"
@@ -217,6 +245,57 @@ fun EditScreen(id: String?, presetMonth: Int?, presetDay: Int?) {
                         "I know the year", if (type == EntryType.Birthday) "Shows their age and star signs" else "Shows how many years",
                         withYear, { withYear = !withYear; dateError = null }, useSwitch = true,
                     )
+                }
+
+                SectionHeader("Second date", icon = Icons.Outlined.Event)
+                if (!hasSecondDate) {
+                    Column(Modifier.padding(horizontal = Space.s4).fillMaxWidth()) {
+                        AppButton(
+                            "+ Add second date (Anniversary / Event)",
+                            { hasSecondDate = true },
+                            kind = ButtonKind.Secondary,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                } else {
+                    Column(
+                        Modifier.padding(horizontal = Space.s4).fillMaxWidth().appCard().padding(Space.s4),
+                        verticalArrangement = Arrangement.spacedBy(Space.s3),
+                    ) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            Text("Second date", style = t.base.copy(fontWeight = FontWeight.Bold), color = c.text)
+                            AppButton("Remove", { hasSecondDate = false; secondDateError = null }, kind = ButtonKind.Text)
+                        }
+                        Text("Label", style = t.label, color = c.textMuted, modifier = Modifier.padding(start = Space.s1))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.s2)) {
+                            listOf("Anniversary", "Work anniversary", "Wedding", "Custom").forEach { lbl ->
+                                val isCustom = lbl == "Custom" && secondLabel !in listOf("Anniversary", "Work anniversary", "Wedding")
+                                val isSelected = if (lbl == "Custom") isCustom else secondLabel == lbl
+                                AppChip(lbl, isSelected, {
+                                    if (lbl != "Custom") secondLabel = lbl else if (!isCustom) secondLabel = "Milestone"
+                                })
+                            }
+                        }
+                        if (secondLabel !in listOf("Anniversary", "Work anniversary", "Wedding")) {
+                            AppTextField("Custom label", secondLabel, { secondLabel = it }, placeholder = "e.g. Engagement")
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(Space.s2)) {
+                            Picker("Month", monthName(secondMonth, full = false), (1..12).map { it to monthName(it) }, { secondMonth = it; secondDay = minOf(secondDay, Dates.maxDay(it)); secondDateError = null }, Modifier.weight(1.3f))
+                            Picker("Day", "$secondDay", (1..Dates.maxDay(secondMonth)).map { it to "$it" }, { secondDay = it; secondDateError = null }, Modifier.weight(1f))
+                            if (secondWithYear) {
+                                Picker("Year", "$secondYear", ((thisYear + 5) downTo 1900).map { it to "$it" }, { secondYear = it; secondDateError = null }, Modifier.weight(1.3f))
+                            }
+                        }
+                        if (secondDateError != null) Text(secondDateError!!, style = t.xs, color = c.danger)
+                        ReminderRow(
+                            "I know the year", "Shows how many years celebrated",
+                            secondWithYear, { secondWithYear = !secondWithYear; secondDateError = null }, useSwitch = true,
+                        )
+                    }
                 }
 
                 SectionHeader("Gift ideas & notes", icon = Icons.Outlined.CardGiftcard)

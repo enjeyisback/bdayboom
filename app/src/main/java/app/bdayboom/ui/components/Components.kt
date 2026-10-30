@@ -38,6 +38,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Contacts
 import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Checkbox
@@ -804,8 +806,8 @@ data class NavDest(val label: String, val icon: ImageVector)
 val MainDestinations = listOf(
     NavDest("Home", Icons.Outlined.Home),
     NavDest("Calendar", Icons.Outlined.CalendarMonth),
-    NavDest("Wishes", Icons.Outlined.Mail),
-    NavDest("Share link", Icons.Outlined.Link),
+    NavDest("Contacts", Icons.Outlined.Contacts),
+    NavDest("Settings", Icons.Outlined.Settings),
 )
 
 @Composable
@@ -840,31 +842,31 @@ fun BottomNav(selected: Int, onSelect: (Int) -> Unit, onAdd: () -> Unit) {
     }
 }
 
-/** Raised rounded-rect add button with label, as in the Stitch nav. */
+/** Raised rounded-rect add button without text. */
 @Composable
 fun AddButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     val c = AppTheme.colors
-    val t = AppTheme.type
     val shape = RoundedCornerShape(Radius.md)
-    Column(
+    Box(
         modifier
+            .heightIn(min = Layout.touchMin)
             .clip(RoundedCornerShape(Radius.md))
             .clickable(role = Role.Button, onClickLabel = "Add birthday", onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = "Add birthday" }
-            .padding(vertical = Space.s1),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(vertical = Space.s2),
+        contentAlignment = Alignment.Center,
     ) {
         Box(
             Modifier
-                .offset(y = (-6).dp)
-                .size(width = 56.dp, height = 40.dp)
-                .shadow(8.dp, shape, ambientColor = c.accent, spotColor = c.accent)
+                .size(width = 54.dp, height = 38.dp)
+                .shadow(6.dp, shape, ambientColor = c.accent, spotColor = c.accent)
                 .clip(shape)
                 .background(Brush.horizontalGradient(listOf(c.ctaStart, c.ctaEnd)))
                 .focusRing(shape),
             contentAlignment = Alignment.Center,
-        ) { Icon(Icons.Outlined.Add, null, tint = c.onCta) }
-        Text("Add", style = t.label, color = c.text, modifier = Modifier.offset(y = (-4).dp))
+        ) {
+            Icon(Icons.Outlined.Add, contentDescription = null, tint = c.onCta)
+        }
     }
 }
 

@@ -103,7 +103,7 @@ fun SettingsScreen() {
     val timeText = LocalTime.of(settings.reminderHour, settings.reminderMinute).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTop("Settings", "Reminders and look")
+        ScreenTop("Settings", "Reminders and look", tab = true)
         ScrollScreen {
             SectionHeader("Reminders", icon = Icons.Outlined.NotificationsActive)
             SettingsItem("Reminder time", timeText, Icons.Outlined.AccessTime) { timeOpen = true }

@@ -43,13 +43,25 @@ data class Upcoming(
     val next: LocalDate,
     val daysLeft: Int,
     val turning: Int?,
+    val eventLabel: String? = null,
 ) {
     val isToday get() = daysLeft == 0
 
     companion object {
-        fun of(p: Person, today: LocalDate, rule: Feb29Rule): Upcoming {
-            val next = Dates.nextOccurrence(p.month, p.day, today, rule)
-            return Upcoming(p, next, Dates.daysBetween(today, next), Dates.turning(p.year, next))
+        fun of(
+            p: Person,
+            today: LocalDate,
+            rule: Feb29Rule,
+            eventLabel: String? = null,
+            customMonth: Int? = null,
+            customDay: Int? = null,
+            customYear: Int? = null,
+        ): Upcoming {
+            val m = customMonth ?: p.month
+            val d = customDay ?: p.day
+            val y = customYear ?: p.year
+            val next = Dates.nextOccurrence(m, d, today, rule)
+            return Upcoming(p, next, Dates.daysBetween(today, next), Dates.turning(y, next), eventLabel)
         }
     }
 }

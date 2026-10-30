@@ -15,7 +15,7 @@ import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.HealthAndSafety
 import app.bdayboom.ui.screens.CheckupScreen
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.PictureAsPdf
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -48,8 +48,10 @@ import androidx.navigation.navArgument
 import app.bdayboom.ui.components.BottomNav
 import app.bdayboom.ui.screens.BackupScreen
 import app.bdayboom.ui.screens.CalendarScreen
+import app.bdayboom.ui.screens.ContactsScreen
 import app.bdayboom.ui.screens.DetailScreen
 import app.bdayboom.ui.screens.EditScreen
+import app.bdayboom.ui.screens.ExportScreen
 import app.bdayboom.ui.screens.HelpScreen
 import app.bdayboom.ui.screens.HomeScreen
 import app.bdayboom.ui.screens.ImportScreen
@@ -63,6 +65,7 @@ import kotlinx.coroutines.launch
 object Routes {
     const val HOME = "home" // S01-S03
     const val CALENDAR = "calendar" // S08
+    const val CONTACTS = "contacts"
     const val WISHES = "wishes" // S09, S10
     const val LINK = "link" // S11-S13
     const val PERSON = "person/{id}" // S05
@@ -79,7 +82,7 @@ object Routes {
     fun edit(id: String? = null, month: Int? = null, day: Int? = null) =
         "edit?id=${id ?: ""}&month=${month ?: 0}&day=${day ?: 0}"
 
-    val tabs = listOf(HOME, CALENDAR, WISHES, LINK)
+    val tabs = listOf(HOME, CALENDAR, CONTACTS, SETTINGS)
 }
 
 /** Shared app chrome that screens reach for. */
@@ -128,10 +131,8 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
                     listOf(
                         Triple("Reminder check-up", Icons.Outlined.HealthAndSafety, Routes.CHECKUP),
                         Triple("Import from contacts", Icons.Outlined.Contacts, Routes.IMPORT),
-                        Triple("Groups", Icons.Outlined.Group, Routes.GROUPS),
                         Triple("Backup & restore", Icons.Outlined.Backup, Routes.BACKUP),
-                        Triple("Export as PDF", Icons.Outlined.PictureAsPdf, Routes.EXPORT),
-                        Triple("Settings", Icons.Outlined.Settings, Routes.SETTINGS),
+                        Triple("Export as CSV", Icons.Outlined.FileDownload, Routes.EXPORT),
                         Triple("Reminders not arriving?", Icons.AutoMirrored.Outlined.HelpOutline, Routes.HELP),
                     ).forEach { (label, icon, r) ->
                         NavigationDrawerItem(
@@ -151,6 +152,7 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
                     NavHost(nav, startDestination = Routes.HOME, modifier = Modifier.weight(1f)) {
                         composable(Routes.HOME) { HomeScreen() }
                         composable(Routes.CALENDAR) { CalendarScreen() }
+                        composable(Routes.CONTACTS) { ContactsScreen() }
                         composable(Routes.WISHES) {
                             StubScreen("Wishes", "Greeting cards and ready-made wishes", "Wishes and cards arrive in a later build. For now, send a wish from anyone's page or from the reminder itself.", tab = true)
                         }
@@ -183,9 +185,7 @@ fun AppRoot(openEntry: String?, openRoute: String?, onOpened: () -> Unit) {
                         composable(Routes.GROUPS) {
                             StubScreen("Groups", "Family, friends, work", "Renaming and deleting groups arrives in a later build. You can already create a group while adding someone.")
                         }
-                        composable(Routes.EXPORT) {
-                            StubScreen("Export as PDF", "A printable list", "PDF export arrives in a later build.")
-                        }
+                        composable(Routes.EXPORT) { ExportScreen() }
                     }
                     if (route in Routes.tabs) {
                         BottomNav(

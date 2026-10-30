@@ -39,7 +39,8 @@ class ReminderScheduler(
         val offsets = repo().offsetsNow()
 
         for (due in ReminderEngine.dueNow(people, offsets, time, s.feb29, now)) {
-            if (repo().markFiredNow(due.person.id, due.occurrence.toString(), due.daysBefore)) notifier.show(due, s.keepUntilWished)
+            val key = "${due.occurrence}${due.label?.let { "#$it" } ?: ""}"
+            if (repo().markFiredNow(due.person.id, key, due.daysBefore)) notifier.show(due, s.keepUntilWished)
         }
 
         val next = ReminderEngine.nextAt(people, offsets, time, s.feb29, now)

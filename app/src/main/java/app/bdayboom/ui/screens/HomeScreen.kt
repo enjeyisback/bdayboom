@@ -90,7 +90,7 @@ fun HomeScreen() {
     }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTop("BdayBoom", "Coming up", tab = true)
+        ScreenTop("BdayBoom", tab = true)
         val all = people
         if (all == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -108,7 +108,21 @@ fun HomeScreen() {
             return@Column
         }
 
-        val upcoming = all.map { Upcoming.of(it, today, settings.feb29) }.sortedWith(compareBy({ it.daysLeft }, { it.person.name.lowercase() }))
+        val upcoming = all.flatMap { p ->
+            val primary = Upcoming.of(p, today, settings.feb29)
+            if (p.secondMonth != null && p.secondDay != null) {
+                listOf(
+                    primary,
+                    Upcoming.of(
+                        p, today, settings.feb29,
+                        eventLabel = p.secondLabel?.ifBlank { "Anniversary" } ?: "Anniversary",
+                        customMonth = p.secondMonth,
+                        customDay = p.secondDay,
+                        customYear = p.secondYear,
+                    ),
+                )
+            } else listOf(primary)
+        }.sortedWith(compareBy({ it.daysLeft }, { it.person.name.lowercase() }))
         val chipLabels = listOf("All (${all.size})") + groups.map { gr -> "${gr.name} (${all.count { it.groupId == gr.id }})" }
         val selectedLabel = groupFilter?.let { id -> groups.indexOfFirst { it.id == id }.takeIf { it >= 0 }?.let { chipLabels[it + 1] } } ?: chipLabels[0]
         val shown = upcoming.filter { u ->
@@ -197,7 +211,7 @@ fun HomeScreen() {
             }
             if (week.isNotEmpty()) {
                 item { SectionHeader("This week", icon = Icons.Outlined.Cake, trailing = count(week.size)) }
-                items(week, key = { it.person.id }) { u ->
+                items(week, key = { "${it.person.id}-${it.eventLabel ?: "primary"}" }) { u ->
                     PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, { delete(u) }, Modifier.animateItem())
                 }
             }
@@ -206,13 +220,13 @@ fun HomeScreen() {
                     val title = monthName(ym.monthValue) + if (ym.year != today.year) " ${ym.year}" else ""
                     SectionHeader(title, icon = Icons.Outlined.CalendarMonth, trailing = count(list.size))
                 }
-                items(list, key = { it.person.id }) { u ->
+                items(list, key = { "${it.person.id}-${it.eventLabel ?: "primary"}" }) { u ->
                     PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, { delete(u) }, Modifier.animateItem())
                 }
             }
             if (alphabetical.isNotEmpty()) {
                 item { SectionHeader("A to Z", icon = Icons.Outlined.Cake, trailing = count(alphabetical.size)) }
-                items(alphabetical, key = { it.person.id }) { u ->
+                items(alphabetical, key = { "${it.person.id}-${it.eventLabel ?: "primary"}" }) { u ->
                     PersonRow(rowModel(u, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, { delete(u) }, Modifier.animateItem())
                 }
             }

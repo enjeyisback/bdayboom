@@ -39,10 +39,11 @@ fun EntryType.kind() = when (this) {
 
 /** "Turning 32", "6 years", or null. */
 fun milestone(u: Upcoming): String? = u.turning?.let {
-    when (u.person.type) {
-        EntryType.Birthday -> "Turning $it"
-        EntryType.Anniversary -> if (it == 1) "1 year" else "$it years"
-        EntryType.Event -> null
+    when {
+        u.eventLabel != null -> if (it == 1) "1 year" else "$it years"
+        u.person.type == EntryType.Birthday -> "Turning $it"
+        u.person.type == EntryType.Anniversary -> if (it == 1) "1 year" else "$it years"
+        else -> null
     }
 }
 
@@ -54,7 +55,7 @@ fun whenText(days: Int): String = when (days) {
 
 fun rowModel(u: Upcoming, groups: List<Group>): PersonRowModel {
     val p = u.person
-    val group = groups.firstOrNull { it.id == p.groupId }?.name
+    val group = u.eventLabel ?: groups.firstOrNull { it.id == p.groupId }?.name
         ?: when (p.type) { EntryType.Anniversary -> "Anniversary"; EntryType.Event -> "Event"; else -> "No group" }
     val date = shortDate(u.next)
     val ms = milestone(u)
@@ -65,7 +66,8 @@ fun rowModel(u: Upcoming, groups: List<Group>): PersonRowModel {
         append(" on ").append(u.next.dayOfMonth).append(' ').append(monthName(u.next.monthValue))
         append(", ").append(whenText(u.daysLeft))
     }
-    return PersonRowModel(p.id, p.name, meta, group, date, spoken, p.type.kind(), u.daysLeft, p.photoPath)
+    val kind = if (u.eventLabel != null) EntryKind.Anniversary else p.type.kind()
+    return PersonRowModel(p.id, p.name, meta, group, date, spoken, kind, u.daysLeft, p.photoPath)
 }
 
 /** Wish text in the BdayBoom voice. */

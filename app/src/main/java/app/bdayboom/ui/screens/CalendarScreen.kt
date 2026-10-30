@@ -65,14 +65,28 @@ fun CalendarScreen() {
     val selected = LocalDate.parse(selectedText)
 
     // Each person's occurrence inside the shown month (Feb 29 follows the user's rule).
-    val inMonth = people.mapNotNull { p ->
-        val occ = Dates.occurrenceIn(month.year, p.month, p.day, settings.feb29)
-        if (YearMonth.from(occ) == month) p to occ else null
+    val inMonth = people.flatMap { p ->
+        val occ1 = Dates.occurrenceIn(month.year, p.month, p.day, settings.feb29)
+        val l1 = if (YearMonth.from(occ1) == month) listOf(Triple(p, occ1, null as String?)) else emptyList()
+        val l2 = if (p.secondMonth != null && p.secondDay != null) {
+            val occ2 = Dates.occurrenceIn(month.year, p.secondMonth, p.secondDay, settings.feb29)
+            if (YearMonth.from(occ2) == month) listOf(Triple(p, occ2, p.secondLabel?.ifBlank { "Anniversary" } ?: "Anniversary")) else emptyList()
+        } else emptyList()
+        l1 + l2
     }
-    val dots = inMonth.groupBy({ it.second.dayOfMonth }) { (p, occ) ->
-        if (Dates.turning(p.year, occ) in milestones) DotKind.Milestone else DotKind.Upcoming
+    val dots = inMonth.groupBy({ it.second.dayOfMonth }) { (p, occ, label) ->
+        val yr = if (label != null) p.secondYear else p.year
+        if (Dates.turning(yr, occ) in milestones) DotKind.Milestone else DotKind.Upcoming
     }
-    val onDay = inMonth.filter { it.second == selected }.map { Upcoming.of(it.first, selected, settings.feb29) }
+    val onDay = inMonth.filter { it.second == selected }.map { (p, occ, label) ->
+        Upcoming.of(
+            p, selected, settings.feb29,
+            eventLabel = label,
+            customMonth = occ.monthValue,
+            customDay = occ.dayOfMonth,
+            customYear = if (label != null) p.secondYear else p.year,
+        )
+    }
 
     Column(Modifier.fillMaxSize()) {
         ScreenTop("Calendar", "Month view", tab = true)
@@ -101,9 +115,19 @@ fun CalendarScreen() {
                     }
                 }
             }
-            items(onDay, key = { it.person.id }) { u ->
+            items(onDay, key = { "${it.person.id}-${it.eventLabel ?: "primary"}" }) { u ->
                 // daysLeft is relative to the selected day here; show the real countdown from today instead
-                val real = Upcoming.of(u.person, today, settings.feb29)
+                val real = if (u.eventLabel != null) {
+                    Upcoming.of(
+                        u.person, today, settings.feb29,
+                        eventLabel = u.eventLabel,
+                        customMonth = u.person.secondMonth,
+                        customDay = u.person.secondDay,
+                        customYear = u.person.secondYear,
+                    )
+                } else {
+                    Upcoming.of(u.person, today, settings.feb29)
+                }
                 PersonRow(rowModel(real, groups), { chrome.nav.navigate(Routes.person(u.person.id)) }, {
                     scope.launch {
                         g.repo.softDelete(u.person.id)
