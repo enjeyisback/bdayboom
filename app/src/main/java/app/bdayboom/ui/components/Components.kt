@@ -503,6 +503,7 @@ fun SpotlightCard(
     secondaryLabel: String = "Send gift",
     secondaryIcon: ImageVector = Icons.Outlined.Cake,
     photo: String? = null,
+    wished: Boolean = false,
 ) {
     val c = AppTheme.colors
     val t = AppTheme.type
@@ -534,7 +535,9 @@ fun SpotlightCard(
         Text(message, style = t.sm, color = c.onHero.copy(alpha = 0.9f))
         Spacer(Modifier.height(Space.s4))
         Row(horizontalArrangement = Arrangement.spacedBy(Space.s3)) {
-            AppButton("Send wish", onWish, Modifier.weight(1f), ButtonKind.OnHero, Icons.Outlined.Mail)
+            // After sending it reads "Sent"; tapping again still opens the wish screen.
+            if (wished) AppButton("Sent", onWish, Modifier.weight(1f), ButtonKind.OnHeroGhost, Icons.Outlined.Check)
+            else AppButton("Send wish", onWish, Modifier.weight(1f), ButtonKind.OnHero, Icons.Outlined.Mail)
             AppButton(secondaryLabel, onGift, Modifier.weight(1f), ButtonKind.OnHeroGhost, secondaryIcon)
         }
     }

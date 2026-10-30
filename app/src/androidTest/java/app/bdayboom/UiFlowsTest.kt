@@ -176,4 +176,16 @@ class UiFlowsTest {
         rule.waitUntil(5_000) { graph.settings.now().myWishes.contains(template) }
         runBlocking { graph.settings.removeWish(template) }
     }
+
+    // Today's card: "Send wish" turns into "Sent" once they've been wished today
+    @Test fun spotlightShowsSentAfterWishing() {
+        val today = java.time.LocalDate.now()
+        runBlocking { graph.repo.save(app.bdayboom.data.Person("", app.bdayboom.data.EntryType.Birthday, "Riya Sen", today.monthValue, today.dayOfMonth, null, null, "", true)) }
+        waitForPerson("Riya")
+        waitForText("Send wish")
+        val id = runBlocking { graph.repo.peopleNow().single().id }
+        runBlocking { graph.settings.markWished(id, today) }
+        waitForText("Sent")
+        waitForText("Wish sent. Nice one.")
+    }
 }

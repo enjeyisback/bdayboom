@@ -71,10 +71,12 @@ class MainActivity : ComponentActivity() {
         openEntry = intent.getStringExtra(EXTRA_ENTRY)
         // Debug builds accept a route, so screens can be opened over adb for screenshots.
         if (BuildConfig.DEBUG) openRoute = intent.getStringExtra(EXTRA_ROUTE)
+        intent.getStringExtra(EXTRA_WISH)?.let { openRoute = app.bdayboom.ui.Routes.wishes(it) }
     }
 
     companion object {
         const val EXTRA_ENTRY = "entryId"
         const val EXTRA_ROUTE = "route"
+        const val EXTRA_WISH = "wishFor"
     }
 }

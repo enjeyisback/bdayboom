@@ -6,12 +6,14 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
+import java.time.LocalDate
 
 enum class ThemeMode { System, Light, Dark }
 
@@ -29,7 +31,11 @@ data class AppSettings(
     val autoBackupFailed: Boolean = false,
     /** The user's own wishes; "{name}" becomes the person's first name. */
     val myWishes: List<String> = emptyList(),
-)
+    /** "personId|yyyy-MM-dd" for each day a wish was sent (kept a week). */
+    val wished: Set<String> = emptySet(),
+) {
+    fun wishedOn(personId: String, date: LocalDate) = "$personId|$date" in wished
+}
 
 private val Context.store by preferencesDataStore("settings")
 
@@ -44,6 +50,7 @@ class SettingsStore(private val context: Context) : BackupSettings {
     private val autoLast = longPreferencesKey("auto_backup_last")
     private val autoFailed = booleanPreferencesKey("auto_backup_failed")
     private val wishes = stringPreferencesKey("my_wishes")
+    private val wishedDays = stringSetPreferencesKey("wished")
 
     val flow: Flow<AppSettings> = context.store.data.map { p ->
         AppSettings(
@@ -56,6 +63,7 @@ class SettingsStore(private val context: Context) : BackupSettings {
             autoBackupFolder = p[autoFolder],
             autoBackupLast = p[autoLast] ?: 0,
             autoBackupFailed = p[autoFailed] ?: false,
+            wished = p[wishedDays] ?: emptySet(),
             myWishes = p[wishes]?.let { j -> runCatching { JSONArray(j).let { a -> List(a.length()) { a.getString(it) } } }.getOrNull() } ?: emptyList(),
         )
     }
@@ -84,6 +92,14 @@ class SettingsStore(private val context: Context) : BackupSettings {
     suspend fun setAutoBackupResult(ok: Boolean, at: Long) = context.store.edit {
         it[autoFailed] = !ok
         if (ok) it[autoLast] = at
+    }
+
+    /** Records that [personId] was wished on [date]; drops entries older than a week so the set stays tiny. */
+    suspend fun markWished(personId: String, date: LocalDate) = context.store.edit { p ->
+        val recent = (p[wishedDays] ?: emptySet()).filter { k ->
+            runCatching { LocalDate.parse(k.substringAfterLast('|')) }.getOrNull()?.isAfter(date.minusDays(7)) == true
+        }
+        p[wishedDays] = recent.toSet() + "$personId|$date"
     }
 
     /** Adds to the end; blank or already-saved wishes are ignored. */

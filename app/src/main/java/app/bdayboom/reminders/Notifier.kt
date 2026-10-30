@@ -16,7 +16,6 @@ import app.bdayboom.R
 import app.bdayboom.data.Dates
 import app.bdayboom.data.EntryType
 import app.bdayboom.data.Person
-import app.bdayboom.ui.wishText
 
 class Notifier(private val context: Context) {
 
@@ -50,12 +49,12 @@ class Notifier(private val context: Context) {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        // Opens the wish screen (edit, pick a ready wish); sending there marks them wished.
         val share = PendingIntent.getActivity(
             context, id + 1,
-            Intent.createChooser(
-                Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, wishText(p)),
-                "Send a wish",
-            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            Intent(context, MainActivity::class.java)
+                .putExtra(MainActivity.EXTRA_WISH, p.id)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -72,12 +71,21 @@ class Notifier(private val context: Context) {
         if (sticky) {
             val wished = PendingIntent.getBroadcast(
                 context, id + 2,
-                Intent(context, WishedReceiver::class.java).putExtra(WishedReceiver.EXTRA_ID, id),
+                Intent(context, WishedReceiver::class.java).putExtra(WishedReceiver.EXTRA_ID, id)
+                    .putExtra(WishedReceiver.EXTRA_PERSON, p.id).putExtra(WishedReceiver.EXTRA_DATE, due.occurrence.toString()),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
             b.addAction(0, "Wished ✓", wished)
         }
         post(id, b.build())
+    }
+
+    /** Clears today's on-the-day reminders for [p] (birthday and second date), e.g. once a wish is sent. */
+    fun clearOnTheDay(p: Person, date: java.time.LocalDate) {
+        val nm = NotificationManagerCompat.from(context)
+        listOf(null, p.secondLabel?.ifBlank { "Anniversary" } ?: "Anniversary").forEach { label ->
+            nm.cancel("${p.id}|$date|${label ?: ""}|0".hashCode())
+        }
     }
 
     /** Proves the whole path end to end: channel, permission, sound. */

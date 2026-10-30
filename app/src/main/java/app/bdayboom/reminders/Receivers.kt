@@ -29,14 +29,19 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
     }
 }
 
-/** "Wished ✓" on a sticky on-the-day reminder: clears it. */
+/** "Wished ✓" on a sticky on-the-day reminder: marks them wished (Home shows "Sent") and clears it. */
 class WishedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         androidx.core.app.NotificationManagerCompat.from(context).cancel(intent.getIntExtra(EXTRA_ID, 0))
+        val person = intent.getStringExtra(EXTRA_PERSON) ?: return
+        val date = intent.getStringExtra(EXTRA_DATE)?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() } ?: return
+        runInBackground(context) { kotlinx.coroutines.runBlocking { it.settings.markWished(person, date) } }
     }
 
     companion object {
         const val EXTRA_ID = "notificationId"
+        const val EXTRA_PERSON = "personId"
+        const val EXTRA_DATE = "date"
     }
 }
 

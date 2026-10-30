@@ -80,7 +80,15 @@ fun WishScreen(personId: String) {
             SectionHeader("Your message", icon = Icons.Outlined.EditNote)
             Column(Modifier.padding(horizontal = Space.s4).fillMaxWidth().appCard().padding(Space.s4), verticalArrangement = Arrangement.spacedBy(Space.s3)) {
                 AppTextField("Message", text, { text = it }, minLines = 4)
-                AppButton("Send", { shareText(context, text.trim()) }, Modifier.fillMaxWidth(), icon = Icons.Outlined.Send, enabled = text.isNotBlank())
+                AppButton("Send", {
+                    shareText(context, text.trim())
+                    // The share sheet can't tell us if it was really sent; tapping Send is the signal.
+                    if (p != null) chrome.scope.launch {
+                        val today = java.time.LocalDate.now()
+                        g.settings.markWished(p.id, today)
+                        g.notifier.clearOnTheDay(p, today)
+                    }
+                }, Modifier.fillMaxWidth(), icon = Icons.Outlined.Send, enabled = text.isNotBlank())
                 AppButton("Save to my wishes", {
                     // Saved as a template so it works for anyone: their name goes back to {name}.
                     val template = if (p != null) text.trim().replace(wishName(p), "{name}") else text.trim()

@@ -200,12 +200,17 @@ fun HomeScreen() {
                 }
                 SpotlightCard(
                     u.person.name, turning,
-                    if (u.person.type == EntryType.Birthday) "It's their day! A quick wish goes a long way." else "A day worth marking. Say something nice.",
+                    when {
+                        settings.wishedOn(u.person.id, today) -> "Wish sent. Nice one."
+                        u.person.type == EntryType.Birthday -> "It's their day! A quick wish goes a long way."
+                        else -> "A day worth marking. Say something nice."
+                    },
                     onWish = { chrome.nav.navigate(Routes.wishes(u.person.id)) },
                     onGift = { chrome.nav.navigate(Routes.person(u.person.id)) },
                     secondaryLabel = "Open",
                     secondaryIcon = Icons.AutoMirrored.Outlined.OpenInNew,
                     photo = u.person.photoPath,
+                    wished = settings.wishedOn(u.person.id, today),
                 )
             }
             if (week.isNotEmpty()) {
