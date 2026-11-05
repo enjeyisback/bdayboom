@@ -36,6 +36,12 @@ class DatesTest {
         assertEquals(LocalDate.of(2028, 2, 29), Dates.occurrenceIn(2028, 2, 29, Feb29Rule.Feb28))
     }
 
+    @Test fun weekRunsSundayToSaturday() {
+        assertEquals(6, Dates.daysLeftInWeek(LocalDate.of(2026, 11, 1))) // Sunday
+        assertEquals(2, Dates.daysLeftInWeek(LocalDate.of(2026, 11, 5))) // Thursday
+        assertEquals(0, Dates.daysLeftInWeek(LocalDate.of(2026, 11, 7))) // Saturday
+    }
+
     @Test fun turningAndUnknownYear() {
         assertEquals(31, Dates.turning(1995, LocalDate.of(2026, 3, 11)))
         assertNull(Dates.turning(null, LocalDate.of(2026, 3, 11)))

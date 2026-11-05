@@ -37,6 +37,9 @@ object Dates {
 
     fun daysBetween(from: LocalDate, to: LocalDate): Int = ChronoUnit.DAYS.between(from, to).toInt()
 
+    /** Days left until Saturday: weeks run Sunday to Saturday, so 6 on a Sunday and 0 on a Saturday. */
+    fun daysLeftInWeek(today: LocalDate): Int = 6 - today.dayOfWeek.value % 7
+
     /** Age reached (or years married) on [occurrence]; null when the year is unknown or in the future. */
     fun turning(year: Int?, occurrence: LocalDate): Int? =
         year?.let { occurrence.year - it }?.takeIf { it >= 0 }

@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import androidx.core.content.FileProvider
 import app.bdayboom.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,8 +68,12 @@ class UpdateManager private constructor(private val context: Context) {
         scope.launch {
             _state.value = try {
                 val info = fetchLatest()
-                prefs.edit().putLong("last_check", System.currentTimeMillis()).apply()
-                if (info != null && isNewer(info.version, BuildConfig.VERSION_NAME)) UpdateState.Available(info) else UpdateState.UpToDate
+                if (info != null && isNewer(info.version, BuildConfig.VERSION_NAME)) {
+                    UpdateState.Available(info) // not throttled: the app may be killed before the dialog is seen, so ask again next start
+                } else {
+                    prefs.edit().putLong("last_check", System.currentTimeMillis()).apply()
+                    UpdateState.UpToDate
+                }
             } catch (e: Exception) {
                 Log.w(TAG, "Update check failed", e)
                 UpdateState.Failed("Couldn't check for updates. Check your connection and try again.")
@@ -164,7 +169,7 @@ class UpdateManager private constructor(private val context: Context) {
                 session.fsync(out)
             }
             val result = PendingIntent.getBroadcast(
-                context, id, Intent(context, InstallResultReceiver::class.java),
+                context, id, Intent(context, InstallResultReceiver::class.java).putExtra(EXTRA_APK, apk.path),
                 // Mutable: the system adds the status extras to this intent.
                 PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0),
             )
@@ -172,8 +177,23 @@ class UpdateManager private constructor(private val context: Context) {
         }
     }
 
-    internal fun installFailed() {
-        _state.value = UpdateState.Failed("The update didn't install. Try again.")
+    /**
+     * The session install failed. MIUI rejects session installs from apps that aren't Xiaomi's or Google's
+     * ("Permission Denied"), so fall back to opening the APK in the phone's own installer, which MIUI allows.
+     */
+    internal fun installFailed(apk: File?) {
+        try {
+            if (apk == null || !apk.exists()) error("no downloaded apk")
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.updates", apk)
+            @Suppress("DEPRECATION")
+            context.startActivity(
+                Intent(Intent.ACTION_INSTALL_PACKAGE, uri)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION),
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Fallback install failed", e)
+            _state.value = UpdateState.Failed("The update didn't install. Try again.")
+        }
     }
 
     /** Installs an already downloaded update (after the permission was granted), or downloads it again. */
@@ -186,6 +206,7 @@ class UpdateManager private constructor(private val context: Context) {
 
     companion object {
         private const val TAG = "Updates"
+        internal const val EXTRA_APK = "apk"
 
         @Volatile private var instance: UpdateManager? = null
         fun get(context: Context): UpdateManager =
@@ -218,7 +239,9 @@ class InstallResultReceiver : BroadcastReceiver() {
             else -> {
                 Log.w("Updates", "install failed: $status ${intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)}")
                 // Cancelled by the user is not an error worth a message.
-                if (status != PackageInstaller.STATUS_FAILURE_ABORTED) UpdateManager.get(context).installFailed()
+                if (status != PackageInstaller.STATUS_FAILURE_ABORTED) {
+                    UpdateManager.get(context).installFailed(intent.getStringExtra(UpdateManager.EXTRA_APK)?.let(::File))
+                }
             }
         }
     }

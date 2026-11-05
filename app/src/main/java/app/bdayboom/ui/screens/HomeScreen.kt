@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import app.bdayboom.data.AppSettings
+import app.bdayboom.data.Dates
 import app.bdayboom.data.EntryType
 import app.bdayboom.data.Upcoming
 import app.bdayboom.graph
@@ -126,8 +127,9 @@ fun HomeScreen() {
                 (query.isBlank() || u.person.name.contains(query.trim(), ignoreCase = true))
         }
         val todays = shown.filter { it.isToday }
-        val week = if (byName) emptyList() else shown.filter { it.daysLeft in 1..7 }
-        val later = if (byName) emptyMap() else shown.filter { it.daysLeft > 7 }.groupBy { YearMonth.from(it.next) }
+        val weekEnd = Dates.daysLeftInWeek(today)
+        val week = if (byName) emptyList() else shown.filter { it.daysLeft in 1..weekEnd }
+        val later = if (byName) emptyMap() else shown.filter { it.daysLeft > weekEnd }.groupBy { YearMonth.from(it.next) }
         val alphabetical = if (byName) shown.filter { !it.isToday }.sortedBy { it.person.name.lowercase() } else emptyList()
 
         LazyColumn(Modifier.fillMaxSize()) {

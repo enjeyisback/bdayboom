@@ -123,7 +123,7 @@ fun SettingsScreen() {
 
             Column(Modifier.padding(horizontal = Space.s4, vertical = Space.s2)) {
                 ReminderRow(
-                    "Morning summary at 9:00", "Who's celebrating today and this week. Quiet weeks: Monday only",
+                    "Morning summary at 9:00", "Who's celebrating today and this week. Quiet weeks: Sunday only",
                     settings.dailySummary, { scope.launch { g.settings.setDailySummary(!settings.dailySummary); g.scheduler.rescheduleAsync() } }, useSwitch = true,
                 )
                 ReminderRow(

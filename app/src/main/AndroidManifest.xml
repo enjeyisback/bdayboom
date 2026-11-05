@@ -30,6 +30,16 @@
         </activity>
 
         <receiver android:name=".update.InstallResultReceiver" android:exported="false" />
+        <!-- Hands the downloaded update to the phone's installer when a session install is refused (MIUI). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_files" />
+        </provider>
 
 
         <receiver

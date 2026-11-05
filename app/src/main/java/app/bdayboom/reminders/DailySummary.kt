@@ -1,5 +1,6 @@
 package app.bdayboom.reminders
 
+import app.bdayboom.data.Dates
 import app.bdayboom.data.EntryType
 import app.bdayboom.data.Feb29Rule
 import app.bdayboom.data.Person
@@ -15,8 +16,8 @@ data class Summary(val title: String, val body: String)
 
 /**
  * The 9:00 morning summary. Fixed time on purpose (phone's local time); the user can only turn it off.
- * Says something when there's a celebration today or in the next 7 days, or on the 1st of the month.
- * A quiet week gets one "nothing this week" on Monday, never a daily empty message.
+ * Says something when there's a celebration today or later this week (Sunday to Saturday), or on the 1st of the month.
+ * A quiet week gets one "nothing this week" on Sunday, never a daily empty message.
  */
 object DailySummary {
     val AT: LocalTime = LocalTime.of(9, 0)
@@ -44,7 +45,7 @@ object DailySummary {
         if (events.isEmpty()) return null
 
         val todays = events.filter { it.daysLeft == 0 }
-        val week = events.filter { it.daysLeft in 1..6 }
+        val week = events.filter { it.daysLeft in 1..Dates.daysLeftInWeek(today) }
         val month = if (today.dayOfMonth == 1) monthLine(events, today) else null
         return when {
             todays.isNotEmpty() -> Summary(
@@ -53,7 +54,7 @@ object DailySummary {
             )
             week.isNotEmpty() -> Summary("This week: " + count(week), listOfNotNull(dayList(week), month).joinToString("\n"))
             month != null -> Summary(month, nextUp(events))
-            today.dayOfWeek == DayOfWeek.MONDAY -> Summary("No birthdays this week", nextUp(events))
+            today.dayOfWeek == DayOfWeek.SUNDAY ->Summary("No birthdays this week", nextUp(events))
             else -> null
         }
     }

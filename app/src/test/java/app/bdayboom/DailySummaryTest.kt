@@ -16,7 +16,7 @@ import java.util.Locale
 
 class DailySummaryTest {
     private val friday = LocalDate.of(2026, 10, 30)
-    private val monday = LocalDate.of(2026, 11, 2)
+    private val sunday = LocalDate.of(2026, 11, 8)
 
     @Before fun english() = Locale.setDefault(Locale.ENGLISH)
 
@@ -24,27 +24,27 @@ class DailySummaryTest {
         Person(name, type, name, m, d, null, null, "", on)
 
     @Test fun todayNamesThemAndListsTheRestOfTheWeek() {
-        val s = DailySummary.build(listOf(p("Asha", 10, 30), p("Rohan", 10, 30), p("Meera", 11, 2)), friday, Feb29Rule.Feb28)!!
+        val s = DailySummary.build(listOf(p("Asha", 10, 30), p("Rohan", 10, 30), p("Meera", 10, 31), p("Kabir", 11, 1)), friday, Feb29Rule.Feb28)!!
         assertEquals("🎂 Today: Asha and Rohan", s.title)
-        assertEquals("Also this week: Meera Mon", s.body)
+        assertEquals("Also this week: Meera Sat", s.body) // Kabir's Sunday is next week
     }
 
     @Test fun weekCountsAndShowsTheFirstThree() {
-        val people = listOf(p("A", 10, 31), p("B", 11, 1), p("C", 11, 2), p("D", 11, 3), p("E", 11, 4))
-        val s = DailySummary.build(people, friday, Feb29Rule.Feb28)!!
-        assertEquals("This week: 5 birthdays", s.title)
-        assertEquals("A Sat · B Sun · C Mon · +2 more", s.body)
+        val people = listOf(p("A", 11, 9), p("B", 11, 10), p("C", 11, 11), p("D", 11, 12), p("E", 11, 14), p("F", 11, 15))
+        val s = DailySummary.build(people, sunday, Feb29Rule.Feb28)!!
+        assertEquals("This week: 5 birthdays", s.title) // F is on the next Sunday
+        assertEquals("A Mon · B Tue · C Wed · +2 more", s.body)
     }
 
     @Test fun anniversariesMakeItCelebrations() {
-        val s = DailySummary.build(listOf(p("A", 10, 31), p("B", 11, 1, EntryType.Anniversary)), friday, Feb29Rule.Feb28)!!
+        val s = DailySummary.build(listOf(p("A", 11, 9), p("B", 11, 10, EntryType.Anniversary)), sunday, Feb29Rule.Feb28)!!
         assertEquals("This week: 2 celebrations", s.title)
     }
 
-    @Test fun quietWeekSaysSoOnMondayOnly() {
+    @Test fun quietWeekSaysSoOnSundayOnly() {
         val people = listOf(p("Riya", 11, 20))
         assertNull(DailySummary.build(people, friday, Feb29Rule.Feb28))
-        val s = DailySummary.build(people, monday, Feb29Rule.Feb28)!!
+        val s = DailySummary.build(people, sunday, Feb29Rule.Feb28)!!
         assertEquals("No birthdays this week", s.title)
         assertEquals("Next up: Riya on 20 Nov", s.body)
     }
@@ -55,8 +55,8 @@ class DailySummaryTest {
     }
 
     @Test fun nothingForAnEmptyListOrRemindersOff() {
-        assertNull(DailySummary.build(emptyList(), monday, Feb29Rule.Feb28))
-        assertNull(DailySummary.build(listOf(p("A", 11, 2, on = false)), monday, Feb29Rule.Feb28))
+        assertNull(DailySummary.build(emptyList(), sunday, Feb29Rule.Feb28))
+        assertNull(DailySummary.build(listOf(p("A", 11, 9, on = false)), sunday, Feb29Rule.Feb28))
     }
 
     @Test fun sendsOncePerMorningBetweenNineAndNoon() {
