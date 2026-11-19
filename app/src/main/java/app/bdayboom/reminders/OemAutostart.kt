@@ -32,6 +32,27 @@ object OemAutostart {
         }.getOrNull()
     }
 
+    /** MIUI "Show on lock screen" (10020) and "Display pop-up windows while running in background" (10021). */
+    fun canShowAlarmPage(context: Context): Boolean? = listOf(10020, 10021).map { miuiOp(context, it) ?: return null }.all { it }
+
+    private fun miuiOp(context: Context, op: Int): Boolean? {
+        if (!isXiaomi) return null
+        return runCatching {
+            val ops = context.getSystemService(AppOpsManager::class.java)
+            val check = AppOpsManager::class.java.getMethod("checkOpNoThrow", Int::class.javaPrimitiveType, Int::class.javaPrimitiveType, String::class.java)
+            (check.invoke(ops, op, context.applicationInfo.uid, context.packageName) as Int) == AppOpsManager.MODE_ALLOWED
+        }.getOrNull()
+    }
+
+    /** MIUI's per-app "Other permissions" page, else this app's system info page. */
+    fun permissionsIntent(context: Context): Intent {
+        val miui = Intent("miui.intent.action.APP_PERM_EDITOR")
+            .setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity")
+            .putExtra("extra_pkgname", context.packageName)
+        return if (isXiaomi && miui.resolveActivity(context.packageManager) != null) miui
+        else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
+    }
+
     /** MIUI's Autostart list if present, else this app's system info page. */
     fun settingsIntent(context: Context): Intent {
         val miui = Intent().setComponent(ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"))

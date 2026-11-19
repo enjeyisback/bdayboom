@@ -19,6 +19,8 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) = runInBackground(context) {
         if (intent.action == ACTION_TEST) {
             ReminderTrail.add(context, "test alarm fired, shown=${it.notifier.showTest(viaAlarm = true)}")
+        } else if (intent.action == ACTION_TEST_ALARM) {
+            ReminderTrail.add(context, "test day alarm fired, shown=${it.notifier.showAlarmTest()}")
         } else {
             ReminderTrail.add(context, "alarm fired, next ${it.scheduler.reschedule()}")
         }
@@ -26,6 +28,27 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_TEST = "app.bdayboom.TEST_REMINDER"
+        const val ACTION_TEST_ALARM = "app.bdayboom.TEST_DAY_ALARM"
+        const val ACTION_DAY_ALARM = "app.bdayboom.DAY_ALARM"
+    }
+}
+
+/** "Snooze" / "Stop" on the day alarm, from its notification or its full-screen page. */
+class AlarmActionReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        androidx.core.app.NotificationManagerCompat.from(context).cancel(Notifier.ALARM_ID)
+        AlarmPopup.dismiss()
+        if (intent.action != ACTION_SNOOZE) return
+        runInBackground(context) {
+            kotlinx.coroutines.runBlocking { it.settings.setAlarmSnooze(System.currentTimeMillis() + SNOOZE_MINUTES * 60_000) }
+            ReminderTrail.add(context, "day alarm snoozed, next ${it.scheduler.reschedule()}")
+        }
+    }
+
+    companion object {
+        const val ACTION_SNOOZE = "app.bdayboom.ALARM_SNOOZE"
+        const val ACTION_STOP = "app.bdayboom.ALARM_STOP"
+        const val SNOOZE_MINUTES = 10L
     }
 }
 

@@ -71,6 +71,8 @@ class MainActivity : ComponentActivity() {
         openEntry = intent.getStringExtra(EXTRA_ENTRY)
         // Debug builds accept a route, so screens can be opened over adb for screenshots.
         if (BuildConfig.DEBUG) openRoute = intent.getStringExtra(EXTRA_ROUTE)
+        // Debug builds: `--ei testAlarm N` rings the day alarm in N seconds (adb can't reach our private receivers).
+        if (BuildConfig.DEBUG && intent.hasExtra("testAlarm")) graph.scheduler.scheduleTest(intent.getIntExtra("testAlarm", 10).toLong(), alarm = true)
         intent.getStringExtra(EXTRA_WISH)?.let { openRoute = app.bdayboom.ui.Routes.wishes(it) }
     }
 

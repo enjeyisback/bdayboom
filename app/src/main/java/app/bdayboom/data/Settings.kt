@@ -37,6 +37,14 @@ data class AppSettings(
     val dailySummary: Boolean = true,
     /** yyyy-MM-dd of the last summary sent, so it goes out once a day. */
     val summaryLast: String? = null,
+    /** On the day of a celebration only: ring like an alarm (full screen, looping sound) at [alarmHour]:[alarmMinute]. */
+    val dayAlarm: Boolean = true,
+    val alarmHour: Int = 9,
+    val alarmMinute: Int = 0,
+    /** yyyy-MM-dd the day alarm last rang, so it rings once a day. */
+    val alarmLast: String? = null,
+    /** Epoch millis a snoozed alarm rings again; 0 = none. */
+    val alarmSnooze: Long = 0,
 ) {
     fun wishedOn(personId: String, date: LocalDate) = "$personId|$date" in wished
 }
@@ -57,6 +65,11 @@ class SettingsStore(private val context: Context) : BackupSettings {
     private val wishedDays = stringSetPreferencesKey("wished")
     private val summaryOn = booleanPreferencesKey("daily_summary")
     private val summaryDay = stringPreferencesKey("summary_last")
+    private val alarmOn = booleanPreferencesKey("day_alarm")
+    private val alarmH = intPreferencesKey("alarm_hour")
+    private val alarmM = intPreferencesKey("alarm_minute")
+    private val alarmDay = stringPreferencesKey("alarm_last")
+    private val snooze = longPreferencesKey("alarm_snooze")
 
     val flow: Flow<AppSettings> = context.store.data.map { p ->
         AppSettings(
@@ -72,6 +85,11 @@ class SettingsStore(private val context: Context) : BackupSettings {
             wished = p[wishedDays] ?: emptySet(),
             dailySummary = p[summaryOn] ?: true,
             summaryLast = p[summaryDay],
+            dayAlarm = p[alarmOn] ?: true,
+            alarmHour = p[alarmH] ?: 9,
+            alarmMinute = p[alarmM] ?: 0,
+            alarmLast = p[alarmDay],
+            alarmSnooze = p[snooze] ?: 0,
             myWishes = p[wishes]?.let { j -> runCatching { JSONArray(j).let { a -> List(a.length()) { a.getString(it) } } }.getOrNull() } ?: emptyList(),
         )
     }
@@ -104,6 +122,11 @@ class SettingsStore(private val context: Context) : BackupSettings {
 
     suspend fun setDailySummary(on: Boolean) = context.store.edit { it[summaryOn] = on }
     suspend fun setSummaryLast(day: LocalDate) = context.store.edit { it[summaryDay] = day.toString() }
+
+    suspend fun setDayAlarm(on: Boolean) = context.store.edit { it[alarmOn] = on }
+    suspend fun setAlarmTime(h: Int, m: Int) = context.store.edit { it[alarmH] = h; it[alarmM] = m }
+    suspend fun setAlarmLast(day: LocalDate) = context.store.edit { it[alarmDay] = day.toString() }
+    suspend fun setAlarmSnooze(at: Long) = context.store.edit { it[snooze] = at }
 
     /** Records that [personId] was wished on [date]; drops entries older than a week so the set stays tiny. */
     suspend fun markWished(personId: String, date: LocalDate) = context.store.edit { p ->

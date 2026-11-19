@@ -57,4 +57,22 @@ object ReminderEngine {
             .map { it.at }
             .filter { it.isAfter(now) }
             .minOrNull()
+
+    /**
+     * Day alarm: celebrations happening today, once [alarmTime] has come. Rings until [late] after the alarm time
+     * (phone was off, alarm delivered late); after that it's too late to be useful and only the normal reminder stands.
+     */
+    fun alarmDueNow(people: List<Person>, alarmTime: LocalTime, rule: Feb29Rule, now: LocalDateTime, late: java.time.Duration = java.time.Duration.ofHours(2)): List<Due> =
+        onTheDay(people, alarmTime, rule, now).filter { !it.at.isAfter(now) && it.at.plus(late).isAfter(now) }
+
+    /** Every celebration whose day is today (any time), e.g. for a snoozed alarm. */
+    fun onTheDay(people: List<Person>, time: LocalTime, rule: Feb29Rule, now: LocalDateTime): List<Due> =
+        candidates(people, listOf(0), time, rule, now).filter { it.occurrence == now.toLocalDate() }.toList()
+
+    /** Next day-alarm moment after [now]; skips today if it already rang ([rangToday]). */
+    fun alarmNextAt(people: List<Person>, alarmTime: LocalTime, rule: Feb29Rule, now: LocalDateTime, rangToday: Boolean): LocalDateTime? =
+        candidates(people, listOf(0), alarmTime, rule, now)
+            .map { it.at }
+            .filter { it.isAfter(now) && !(rangToday && it.toLocalDate() == now.toLocalDate()) }
+            .minOrNull()
 }

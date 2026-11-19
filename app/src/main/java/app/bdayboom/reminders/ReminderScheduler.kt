@@ -53,16 +53,75 @@ class ReminderScheduler(
         val nextSummary = if (s.dailySummary) DailySummary.nextAt(now, settings.now().summaryLast) else null
         val next = listOfNotNull(nextReminder, nextSummary).minOrNull()
         setAlarm(next)
+        val nextRing = dayAlarm(people, now)
         WidgetRefresh.all(context)
-        Log.i(TAG, "next reminder at $next (exact=${canExact()})")
+        Log.i(TAG, "next reminder at $next, day alarm at $nextRing (exact=${canExact()})")
+        return listOfNotNull(next, nextRing).minOrNull()
+    }
+
+    /**
+     * Ring-like-an-alarm on a celebration day only (every other day stays a normal notification). Its own
+     * setAlarmClock() alarm: the most reliable kind, MIUI included, and it shows the alarm icon in the status bar.
+     */
+    private fun dayAlarm(people: List<app.bdayboom.data.Person>, now: LocalDateTime): LocalDateTime? {
+        val s = settings.now()
+        if (!s.dayAlarm) {
+            setAlarmClock(null)
+            return null
+        }
+        val today = now.toLocalDate()
+        val alarmTime = LocalTime.of(s.alarmHour, s.alarmMinute)
+        val snoozeAt = s.alarmSnooze.takeIf { it > 0 }?.let { LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(it), ZoneId.systemDefault()) }
+        val notWished = { d: Due -> !s.wishedOn(d.person.id, d.occurrence) }
+        var rangToday = s.alarmLast == today.toString()
+
+        if (snoozeAt != null && !snoozeAt.isAfter(now)) {
+            kotlinx.coroutines.runBlocking { settings.setAlarmSnooze(0) }
+            val dues = ReminderEngine.onTheDay(people, alarmTime, s.feb29, now).filter(notWished)
+            if (snoozeAt.toLocalDate() == today && dues.isNotEmpty()) notifier.showAlarm(dues)
+        } else if (!rangToday) {
+            val dues = ReminderEngine.alarmDueNow(people, alarmTime, s.feb29, now).filter(notWished)
+            if (dues.isNotEmpty()) {
+                kotlinx.coroutines.runBlocking { settings.setAlarmLast(today) }
+                rangToday = true
+                notifier.showAlarm(dues)
+            }
+        }
+        val pendingSnooze = snoozeAt?.takeIf { it.isAfter(now) }
+        val next = listOfNotNull(pendingSnooze, ReminderEngine.alarmNextAt(people, alarmTime, s.feb29, now, rangToday)).minOrNull()
+        setAlarmClock(next)
         return next
     }
 
-    /** Check-up's test: a real alarm in [seconds], through the same receiver birthdays use. */
-    fun scheduleTest(seconds: Long = 60) {
+    private fun setAlarmClock(at: LocalDateTime?) {
         val am = context.getSystemService(AlarmManager::class.java)
         val pi = PendingIntent.getBroadcast(
-            context, 1, Intent(context, ReminderAlarmReceiver::class.java).setAction(ReminderAlarmReceiver.ACTION_TEST),
+            context, 2, Intent(context, ReminderAlarmReceiver::class.java).setAction(ReminderAlarmReceiver.ACTION_DAY_ALARM),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        if (at == null) {
+            am.cancel(pi)
+            return
+        }
+        val millis = at.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val show = PendingIntent.getActivity(
+            context, 3, Intent(context, app.bdayboom.MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        try {
+            if (canExact()) am.setAlarmClock(AlarmManager.AlarmClockInfo(millis, show), pi)
+            else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+        } catch (e: SecurityException) {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+        }
+    }
+
+    /** Check-up's test: a real alarm in [seconds], through the same receiver birthdays use. */
+    fun scheduleTest(seconds: Long = 60, alarm: Boolean = false) {
+        val am = context.getSystemService(AlarmManager::class.java)
+        val pi = PendingIntent.getBroadcast(
+            context, if (alarm) 4 else 1,
+            Intent(context, ReminderAlarmReceiver::class.java).setAction(if (alarm) ReminderAlarmReceiver.ACTION_TEST_ALARM else ReminderAlarmReceiver.ACTION_TEST),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val at = System.currentTimeMillis() + seconds * 1000

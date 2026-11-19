@@ -91,6 +91,7 @@ fun SettingsScreen() {
     val settings by g.settings.flow.collectAsState(initial = AppSettings())
     val offsets by g.repo.offsets.collectAsState(initial = emptyList())
     var timeOpen by remember { mutableStateOf(false) }
+    var alarmTimeOpen by remember { mutableStateOf(false) }
     var licencesOpen by remember { mutableStateOf(false) }
 
     // Re-read permission state whenever we come back from system settings.
@@ -99,9 +100,11 @@ fun SettingsScreen() {
     val canNotify = remember(resumeTick, granted) { g.notifier.canNotify() }
     val canExact = remember(resumeTick) { g.scheduler.canExact() }
     val autostart = remember(resumeTick) { OemAutostart.isEnabled(context) }
+    val canPopup = remember(resumeTick) { app.bdayboom.reminders.AlarmPopup.canDraw(context) }
     val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted++ }
 
     val timeText = LocalTime.of(settings.reminderHour, settings.reminderMinute).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
+    val alarmText = LocalTime.of(settings.alarmHour, settings.alarmMinute).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
 
     Column(Modifier.fillMaxSize()) {
         ScreenTop("Settings", "Reminders and look", tab = true)
@@ -130,6 +133,22 @@ fun SettingsScreen() {
                     "Keep today's reminders until I tap Wished", "Clearing notifications by habit won't lose a birthday",
                     settings.keepUntilWished, { scope.launch { g.settings.setKeepUntilWished(!settings.keepUntilWished) } }, useSwitch = true,
                 )
+                ReminderRow(
+                    "Ring like an alarm on the day", "Only on a birthday or event day: full screen with alarm sound. Other days stay normal",
+                    settings.dayAlarm, { scope.launch { g.settings.setDayAlarm(!settings.dayAlarm); g.scheduler.rescheduleAsync() } }, useSwitch = true,
+                )
+            }
+            if (settings.dayAlarm) {
+                SettingsItem("Alarm time", "$alarmText on the day", Icons.Outlined.Alarm) { alarmTimeOpen = true }
+                SettingsItem(
+                    "Alarm popup over other apps",
+                    if (canPopup) "On: a big card pops up while you use the phone" else "Off: tap to allow “Display over other apps”",
+                    Icons.Outlined.NotificationsActive,
+                ) { runCatching { context.startActivity(app.bdayboom.reminders.AlarmPopup.permissionIntent(context)) } }
+                SettingsItem("Test the alarm", "Rings in 10 seconds: popup if you're using the phone, full screen if it's locked", Icons.Outlined.NotificationsActive) {
+                    g.scheduler.scheduleTest(10, alarm = true)
+                    scope.launch { chrome.snackbar.showSnackbar("The alarm rings in 10 seconds. Lock the phone to see the full-screen version.") }
+                }
             }
             SettingsItem("Reminder sound", "Pick a sound, or make it ring like an alarm", Icons.Outlined.MusicNote) {
                 context.startActivity(
@@ -202,12 +221,18 @@ fun SettingsScreen() {
         }
     }
 
-    if (timeOpen) {
-        val state = rememberTimePickerState(settings.reminderHour, settings.reminderMinute, android.text.format.DateFormat.is24HourFormat(context))
+    if (timeOpen || alarmTimeOpen) {
+        val alarm = alarmTimeOpen
+        val close = { timeOpen = false; alarmTimeOpen = false }
+        val state = rememberTimePickerState(
+            if (alarm) settings.alarmHour else settings.reminderHour,
+            if (alarm) settings.alarmMinute else settings.reminderMinute,
+            android.text.format.DateFormat.is24HourFormat(context),
+        )
         AlertDialog(
-            onDismissRequest = { timeOpen = false },
+            onDismissRequest = close,
             containerColor = c.surface,
-            title = { Text("Reminder time", style = t.lg, color = c.text) },
+            title = { Text(if (alarm) "Alarm time" else "Reminder time", style = t.lg, color = c.text) },
             text = {
                 TimePicker(
                     state,
@@ -224,11 +249,14 @@ fun SettingsScreen() {
             },
             confirmButton = {
                 AppButton("Set", {
-                    timeOpen = false
-                    scope.launch { g.settings.setReminderTime(state.hour, state.minute); g.scheduler.rescheduleAsync() }
+                    close()
+                    scope.launch {
+                        if (alarm) g.settings.setAlarmTime(state.hour, state.minute) else g.settings.setReminderTime(state.hour, state.minute)
+                        g.scheduler.rescheduleAsync()
+                    }
                 })
             },
-            dismissButton = { AppButton("Cancel", { timeOpen = false }, kind = ButtonKind.Text) },
+            dismissButton = { AppButton("Cancel", close, kind = ButtonKind.Text) },
         )
     }
 

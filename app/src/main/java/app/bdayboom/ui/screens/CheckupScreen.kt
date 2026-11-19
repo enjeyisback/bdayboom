@@ -94,7 +94,7 @@ fun CheckupScreen() {
 
     fun open(intent: Intent) = runCatching { context.startActivity(intent) }
 
-    val checks = remember(tick, asked, offsets) {
+    val checks = remember(tick, asked, offsets, settings.dayAlarm) {
         val canNotify = g.notifier.canNotify()
         val exact = g.scheduler.canExact()
         val auto = OemAutostart.isEnabled(context)
@@ -125,6 +125,38 @@ fun CheckupScreen() {
                         when (auto) { true -> "On: reminders come back after a restart"; false -> "Off: reminders stop after a restart"; null -> "Couldn't check. Make sure it's on." },
                         when (auto) { true -> Health.Ok; false -> Health.Fail; null -> Health.Warn }, Icons.Outlined.RestartAlt, "Open",
                     ) { open(OemAutostart.settingsIntent(context)) },
+                )
+            }
+            if (settings.dayAlarm && !g.notifier.canFullScreen()) {
+                add(
+                    Check(
+                        "Birthday alarm screen", "Not allowed: the alarm rings but won't open full screen",
+                        Health.Warn, Icons.Outlined.Alarm, "Allow",
+                    ) { open(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${context.packageName}"))) },
+                )
+            }
+            if (settings.dayAlarm) {
+                val popup = app.bdayboom.reminders.AlarmPopup.canDraw(context)
+                add(
+                    Check(
+                        "Birthday alarm popup",
+                        if (popup) "Pops up over other apps while you use the phone" else "Off: only a small banner shows while you use the phone",
+                        if (popup) Health.Ok else Health.Warn, Icons.Outlined.Alarm, "Allow",
+                    ) { open(app.bdayboom.reminders.AlarmPopup.permissionIntent(context)) },
+                )
+            }
+            if (settings.dayAlarm && OemAutostart.isXiaomi) {
+                val page = OemAutostart.canShowAlarmPage(context)
+                add(
+                    Check(
+                        "Birthday alarm screen",
+                        when (page) {
+                            true -> "Can open over the lock screen"
+                            false -> "Turn on “Show on lock screen” and “Display pop-up windows while running in background”"
+                            null -> "Make sure “Show on lock screen” and background pop-ups are on"
+                        },
+                        if (page == true) Health.Ok else Health.Warn, Icons.Outlined.Alarm, "Open",
+                    ) { open(OemAutostart.permissionsIntent(context)) },
                 )
             }
             add(
@@ -180,6 +212,12 @@ fun CheckupScreen() {
                     g.scheduler.scheduleTest(60)
                     scope.launch { chrome.snackbar.showSnackbar("Close the app now. A test reminder arrives in about a minute.") }
                 }, Modifier.fillMaxWidth(), ButtonKind.Secondary, Icons.Outlined.Timer)
+                if (settings.dayAlarm) {
+                    AppButton("Test the birthday alarm (10 sec)", {
+                        g.scheduler.scheduleTest(10, alarm = true)
+                        scope.launch { chrome.snackbar.showSnackbar("The alarm rings in 10 seconds. Lock the phone to see the full-screen version.") }
+                    }, Modifier.fillMaxWidth(), ButtonKind.Secondary, Icons.Outlined.Alarm)
+                }
             }
             Spacer(Modifier.height(Space.s8))
         }
